@@ -8,6 +8,7 @@
         char* name;
         int decLine;
         int lastLine;
+        int scope;
     } symbol;
 
     static symbol symbolTable[500];
@@ -31,7 +32,7 @@
 		symbolTable[symbolId].lastLine = lineNo;
 	}
 
-    static void insertSymbol(char* name, int lineNo) {
+    static void insertSymbol(char* name, int lineNo, int scope) {
         symbolCount++;
 
         symbolTable[symbolCount].name = (char*)malloc(30 * sizeof(char));
@@ -39,14 +40,16 @@
 
         symbolTable[symbolCount].decLine = lineNo;
         symbolTable[symbolCount].lastLine = lineNo;
+        symbolTable[symbolCount].scope = scope;
     }
 
     static void printSTable() {
-        printf("\n\nSl No.\tSymbol\t\tDeclaration Line\tLast Used Line\n\n");
+        printf("\n\nSl No.\tSymbol\t\tDeclaration Line\tLast Used Line\t\tScope\n\n");
+        printf("==============================================================================\n\n");
 		int i = 0;
 		for(i = 0; i <= symbolCount; i++)
 		{
-			printf("%d\t%s\t\t%d\t\t\t%d\n", i+1, symbolTable[i].name, symbolTable[i].decLine, symbolTable[i].lastLine);
+			printf("%d\t%s\t\t%d\t\t\t%d\t\t\t%d\n", i+1, symbolTable[i].name, symbolTable[i].decLine, symbolTable[i].lastLine, symbolTable[i].scope);
 		}
         printf("\n\n");
     }
@@ -160,7 +163,7 @@ multiline_comment \'\'\'.+\'\'\'
                             // printf("Check - %d\n", check);
 
                             if(check == -1)  {
-                                insertSymbol(yytext, yylineno);
+                                insertSymbol(yytext, yylineno, top());
                             }
                             else {
                                 modifySymbol(check, yylineno);
