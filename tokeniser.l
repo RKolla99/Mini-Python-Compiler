@@ -99,7 +99,8 @@
 
 %option yylineno
 whitespace [ ]
-multiline_comment \'\'\'.+\'\'\'
+trip_squote '''
+trip_dquote """
 
 %%
 \n[\t]* {
@@ -171,8 +172,9 @@ multiline_comment \'\'\'.+\'\'\'
                         }
 \"([^\"\n])*\" {printf("STRING\n");}
 \'([^\'\n])*\' {printf("STRING\n");}
-"#"([a-z]|[0-9]|[A-Z]|" ")* {}
-{multiline_comment} {}
+"#".* {}
+{trip_squote}[^{trip_squote}]*{trip_squote} {}
+{trip_dquote}[^{trip_dquote}]*{trip_dquote} {}
 {whitespace} {}
 
 .   {

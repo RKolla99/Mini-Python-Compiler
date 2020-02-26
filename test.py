@@ -7,4 +7,11 @@ def y():
 	return 3
 
 if(x == 2):
-	pass
+	while(x >= 3):
+		ab = "ss"
+
+'''
+fwvwav
+ dvd
+'''
+
