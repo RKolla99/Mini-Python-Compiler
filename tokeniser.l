@@ -100,30 +100,34 @@
 %option yylineno
 whitespace [ ]
 trip_squote '''
-trip_dquote """
 
 %%
 \n[\t]* {
             depth = indent_depth(yytext);
-            // printf("Depth = %d", depth);
+            //return Depth = %d", depth);
+
+            if (depth == 0) {
+                return NEWLINE;
+            }
 
             if(depth < top()) {
                 while(depth < top())
                     pop();
                 
-                printf("Depth = %d", depth);
+                // printf("Depth = %d", depth);
                 if(depth != top())
                     handle_error(yylineno);
 
-                printf("DEDENT\n");
+
+                return DEDENT;
             }
 
             if(depth > top()) {
                 push(depth);
 
-                printf("INDENT\n");
+                return INDENT;
             }
-            return NEWLINE;
+            
         }
 "import" {return IMPORT;}
 "def" {return DEF;}
@@ -150,10 +154,15 @@ trip_dquote """
 "!=" {return NE;}
 "True" {return TRUE;}
 "False" {return FALSE;}
+"None" {return NONE;}
 "+" {return PL;}
 "-" {return MN;}
 "*" {return ML;}
 "/" {return DV;}
+"%" {return MOD;}
+"^" {return XOR;}
+"&" {return BAND;}
+"|" {return BOR;}
 "(" {return OP;}
 ")" {return CP;}
 "[" {return OB;}
@@ -162,8 +171,9 @@ trip_dquote """
 "=" {return EQL;}
 [0-9]+ {return NUMBER;}
 [_a-zA_Z][_a-zA_Z0-9]*  {
+
                             int check = searchSymbol(yytext);
-                            // printf("Check - %d\n", check);
+                            // return Check - %d\n", check);
 
                             if(check == -1)  {
                                 insertSymbol(yytext, yylineno, top());
@@ -171,14 +181,13 @@ trip_dquote """
                             else {
                                 modifySymbol(check, yylineno);
                             }
-
+                            
                             return ID;
                         }
 \"([^\"\n])*\" {return STRING;}
 \'([^\'\n])*\' {return STRING;}
 "#".* {}
 {trip_squote}[^{trip_squote}]*{trip_squote} {}
-\"\"\"[^(\"\"\")]\"\"\"
 {whitespace} {}
 
 .   {
