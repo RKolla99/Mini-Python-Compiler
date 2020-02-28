@@ -104,7 +104,6 @@ trip_dquote """
 
 %%
 \n[\t]* {
-            printf("NEWLINE\n");
             depth = indent_depth(yytext);
             // printf("Depth = %d", depth);
 
@@ -112,6 +111,10 @@ trip_dquote """
                 while(depth < top())
                     pop();
                 
+                printf("Depth = %d", depth);
+                if(depth != top())
+                    handle_error(yylineno);
+
                 printf("DEDENT\n");
             }
 
@@ -120,46 +123,45 @@ trip_dquote """
 
                 printf("INDENT\n");
             }
+            return NEWLINE;
         }
-"import" {printf("IMPORT\n");}
-"def" {printf("DEF\n");}
-"for" {printf("FOR\n");}
-"while" {printf("WHILE\n");}
-"if" {printf("IF\n");}
-"elif" {printf("ELIF\n");}
-"else" {printf("ELSE\n");}
-"in" {printf("IN\n");}
-"is" {printf("IS\n");}
-"or" {printf("OR\n");}
-"and" {printf("AND\n");}
-"not" {printf("NOT\n");}
-"pass" {printf("PASS\n");}
-"break" {printf("BREAK\n");}
-"continue" {printf("CONTINUE\n");}
-"return" {printf("RETURN\n");}
-":" {printf("COLON\n");}
-">" {printf("GT\n");}
-"<" {printf("LT\n");}
-">=" {printf("GE\n");}
-"<=" {printf("LE\n");}
-"==" {printf("EE\n");}
-"!=" {printf("NE\n");}
-"True" {printf("TRUE\n");}
-"False" {printf("FALSE\n");}
-"+" {printf("PL\n");}
-"-" {printf("MN\n");}
-"*" {printf("ML\n");}
-"/" {printf("DV\n");}
-"(" {printf("OP\n");}
-")" {printf("CP\n");}
-"[" {printf("OB\n");}
-"]" {printf("CB\n");}
-"," {printf("COMMA\n");}
-"=" {printf("EQL\n");}
-[0-9]+ {printf("NUMBER\n");}
+"import" {return IMPORT;}
+"def" {return DEF;}
+"for" {return FOR;}
+"while" {return WHILE;}
+"if" {return IF;}
+"elif" {return ELIF;}
+"else" {return ELSE;}
+"in" {return IN;}
+"is" {return IS;}
+"or" {return OR;}
+"and" {return AND;}
+"not" {return NOT;}
+"pass" {return PASS;}
+"break" {return BREAK;}
+"continue" {return CONTINUE;}
+"return" {return RETURN;}
+":" {return COLON;}
+">" {return GT;}
+"<" {return LT;}
+">=" {return GE;}
+"<=" {return LE;}
+"==" {return EE;}
+"!=" {return NE;}
+"True" {return TRUE;}
+"False" {return FALSE;}
+"+" {return PL;}
+"-" {return MN;}
+"*" {return ML;}
+"/" {return DV;}
+"(" {return OP;}
+")" {return CP;}
+"[" {return OB;}
+"]" {return CB;}
+"," {return COMMA;}
+"=" {return EQL;}
+[0-9]+ {return NUMBER;}
 [_a-zA_Z][_a-zA_Z0-9]*  {
-                            printf("ID\n");
-
                             int check = searchSymbol(yytext);
                             // printf("Check - %d\n", check);
 
@@ -169,12 +171,14 @@ trip_dquote """
                             else {
                                 modifySymbol(check, yylineno);
                             }
+
+                            return ID;
                         }
-\"([^\"\n])*\" {printf("STRING\n");}
-\'([^\'\n])*\' {printf("STRING\n");}
+\"([^\"\n])*\" {return STRING;}
+\'([^\'\n])*\' {return STRING;}
 "#".* {}
 {trip_squote}[^{trip_squote}]*{trip_squote} {}
-{trip_dquote}[^{trip_dquote}]*{trip_dquote} {}
+\"\"\"[^(\"\"\")]\"\"\"
 {whitespace} {}
 
 .   {
