@@ -1,6 +1,10 @@
 %{
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
 
-
+                                                     
+        
 %}
 
 %token NEWLINE INDENT DEDENT IMPORT DEF FOR WHILE IF ELIF ELSE IN IS OR AND NOT PASS BREAK CONTINUE RETURN COLON GT LT GE
@@ -21,11 +25,20 @@ flow_stmt: break_stmt | continue_stmt ;
 break_stmt: BREAK ;
 continue_stmt: CONTINUE ;
 compound_stmt: if_stmt | while_stmt | for_stmt;
-if_stmt: IF test COLON suite if_follow ELSE COLON suite ;
+if_stmt: IF test COLON suite 
+		| IF test COLON suite if_follow ELSE COLON suite 
+		| IF test COLON suite ELSE COLON suite ;
 if_follow: ELIF test COLON suite if_follow
             | ;
-while_stmt: WHILE test COLON suite ELSE COLON suite;
-for_stmt: FOR ID EQL NUMBER SCOLON ID comp_op NUMBER SCOLON ID EQL ID   COLON suite ELSE COLON suite;
+while_stmt: WHILE test COLON suite 
+		| WHILE test COLON suite ELSE COLON suite;
+for_stmt: FOR ID IN testlist COLON suite
+		| FOR ID IN testlist COLON suite ELSE COLON suite;
+testlist: test_nocond repeat_test optional_comma ;
+repeat_test: COMMA test_nocond repeat_test
+	| ;
+optional_comma: COMMA
+	| ;
 suite: simple_stmt | INDENT stmt suite1 DEDENT | NEWLINE;
 suite1: INDENT stmt suite1;
 test: or_test IF or_test ELSE test;
@@ -48,8 +61,8 @@ expr1: BOR xor_expr expr1
 xor_expr: and_expr  xor1_expr ;
 xor1_expr: XOR and_expr xor1_expr 
         | ;
-and_expr: shift_expr and1_expr;
-and1_expr: BAND shift_expr and1_expr 
+and_expr: and1_expr;
+and1_expr: BAND and1_expr 
         | ;
 arith_expr: term arith1_expr;
 arith1_expr: PL term arith1_expr  

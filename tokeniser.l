@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <string.h>
     #include <stdlib.h>
+    #include "y.tab.h"
     #define STACK_SIZE 100
 
     typedef struct symbol {
