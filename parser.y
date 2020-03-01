@@ -1,5 +1,5 @@
-
 %{
+   
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
@@ -833,6 +833,7 @@
 		free(symbolTables);
 		free(allQ);
 	}
+        
 %}
 
 %token NEWLINE INDENT DEDENT IMPORT  WHILE IF ELIF ELSE IN  OR AND NOT PASS BREAK  RETURN COLON GT LT GE
@@ -841,7 +842,15 @@
 %left GE LE NE EE GT LT 
 %left PL MN
 %left ML DV 
+
 %%
+
+constant : NUMBER {insertRecord("Constant", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Constant", $<text>1, currentScope);}
+          | STRING {insertRecord("Constant", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Constant", $<text>1, currentScope);};
+
+term : ID {modifyRecordID("Identifier", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Identifier", $<text>1, currentScope);} 
+     | constant {$$ = $1;} 
+
 
 basic_stmt: pass_stmt {$$=$1;}
            | break_stmt {$$=$1;}
@@ -858,7 +867,7 @@ arith_exp: term {$$=$1;}
           | arith_exp  DV  arith_exp {$$ = createOp("/", 2, $1, $3);}
           | MN arith_exp {$$ = createOp("-", 1, $2);}
           | OP arith_exp CP {$$ = $2;};
-
+ 
 bool_exp: bool_term OR bool_term {$$ = createOp("or", 2, $1, $3);}
          | arith_exp LT arith_exp {$$ = createOp("<", 2, $1, $3);}
          | bool_term AND bool_term {$$ = createOp("and", 2, $1, $3);}
@@ -877,18 +886,9 @@ bool_term: bool_factor {$$ = $1;}
 bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2);}
             | OP bool_exp CP {$$ = $2;}; 
 
-constant : NUMBER {insertRecord("Constant", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Constant", $<text>1, currentScope);}
-          | STRING {insertRecord("Constant", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Constant", $<text>1, currentScope);};
-
-term : ID {modifyRecordID("Identifier", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Identifier", $<text>1, currentScope);} 
-     | constant {$$ = $1;} 
-
 import_stmt: IMPORT ID {insertRecord("PackageName", $<text>2, @2.first_line, currentScope); $$ = createOp("import", 1, createID_Const("PackageName", $<text>2, currentScope));};
-
 pass_stmt: PASS {$$ = createOp("pass", 0);};
-
 break_stmt: BREAK {$$ = createOp("break", 0);};
-
 return_stmt: RETURN {$$ = createOp("return", 0);};;
 
 assign_stmt: ID EQL arith_exp {insertRecord("Identifier", $<text>1, @1.first_line, currentScope); $$ = createOp("=", 2, createID_Const("Identifier", $<text>1, currentScope), $3);}  
@@ -936,9 +936,3 @@ int main() {
     yyparse();
     printf("Valid input");
 }
-
-
-
-
-
-
