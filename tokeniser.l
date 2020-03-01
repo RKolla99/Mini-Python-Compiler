@@ -110,7 +110,10 @@ trip_squote '''
             if (depth == 0) {
                 return NEWLINE;
             }
-
+            if(depth==top())
+            {
+                return NOCHANGE;
+            }
             if(depth < top()) {
                 while(depth < top())
                     pop();
@@ -131,20 +134,16 @@ trip_squote '''
             
         }
 "import" {return IMPORT;}
-"def" {return DEF;}
-"for" {return FOR;}
 "while" {return WHILE;}
 "if" {return IF;}
 "elif" {return ELIF;}
 "else" {return ELSE;}
 "in" {return IN;}
-"is" {return IS;}
 "or" {return OR;}
 "and" {return AND;}
 "not" {return NOT;}
 "pass" {return PASS;}
 "break" {return BREAK;}
-"continue" {return CONTINUE;}
 "return" {return RETURN;}
 ":" {return COLON;}
 ">" {return GT;}
@@ -155,20 +154,14 @@ trip_squote '''
 "!=" {return NE;}
 "True" {return TRUE;}
 "False" {return FALSE;}
-"None" {return NONE;}
 "+" {return PL;}
 "-" {return MN;}
 "*" {return ML;}
 "/" {return DV;}
-"%" {return MOD;}
-"^" {return XOR;}
-"&" {return BAND;}
-"|" {return BOR;}
 "(" {return OP;}
 ")" {return CP;}
 "[" {return OB;}
 "]" {return CB;}
-"," {return COMMA;}
 "=" {return EQL;}
 [0-9]+ {return NUMBER;}
 [_a-zA_Z][_a-zA_Z0-9]*  {
