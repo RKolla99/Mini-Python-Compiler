@@ -845,10 +845,10 @@
 
 %%
 
-constant : NUMBER {insertRecord("Constant", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Constant", $<text>1, currentScope);}
-          | STRING {insertRecord("Constant", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Constant", $<text>1, currentScope);};
+constant : NUMBER {insertRecord("Constant", $1, @1.first_line, currentScope);$$ = createID_Const("Constant", $1, currentScope);}
+          | STRING {insertRecord("Constant", $1, @1.first_line, currentScope);$$ = createID_Const("Constant", $1, currentScope);};
 
-term : ID {modifyRecordID("Identifier", $<text>1, @1.first_line, currentScope); $$ = createID_Const("Identifier", $<text>1, currentScope);} 
+term : ID {modifyRecordID("Identifier", $1, @1.first_line, currentScope); $$ = createID_Const("Identifier", $1, currentScope);} 
      | constant {$$ = $1;} 
 
 
@@ -897,7 +897,7 @@ assign_stmt: ID EQL arith_exp {insertRecord("Identifier", $<text>1, @1.first_lin
 
 finalStatements: basic_stmt {$$ = $1;}
                 | cmpd_stmt {$$ = $1;}
-                | error NEWLINE {yyerrok; yyclearin; $$=createOp("SyntaxError", 0);};
+                | error NEWLINE {yyerror; yyclearin; $$=createOp("SyntaxError", 0);};
 
 cmpd_stmt: if_stmt {$$ = $1;} | while_stmt {$$ = $1;};
 
@@ -925,14 +925,16 @@ end_suite : DEDENT {updateCScope($<depth>1);} finalStatements {$$ = createOp("En
 
 %%
 
-
-void yyerror()
+int yyerror(char * msg)
 {
-    printf("Syntax error in line %d", yylineno);
-    exit(0);
+	printf("\nSyntax Error at Line %d, Column : %d\n",  yylineno, yylloc.last_column);
+	exit(0);
 }
 
-int main() {
-    yyparse();
-    printf("Valid input");
+int main()
+{
+	//printf("Enter the Expression\n");
+	yyparse();
+	printf("No Syntax error\n");
+	return 0;
 }
