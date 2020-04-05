@@ -5,55 +5,8 @@
     #include "y.tab.h"
     #define STACK_SIZE 100
 
-    typedef struct symbol {
-        char* name;
-        int decLine;
-        int lastLine;
-        int scope;
-    } symbol;
-
-    static symbol symbolTable[500];
-
-    static int symbolCount = -1;
-
-    static int stack_level = -1, error_number = -1, indent_stack[STACK_SIZE], errors[100];
-
-    static int searchSymbol(char* name) {
-        int i = 0;
-        for (i = 0; i < symbolCount; i++) {
-            if((strcmp(symbolTable[i].name, name)==0))
-			{
-				return i;
-			}
-        }
-        return -1;
-    }
-
-    static void modifySymbol(int symbolId, int lineNo) {
-		symbolTable[symbolId].lastLine = lineNo;
-	}
-
-    static void insertSymbol(char* name, int lineNo, int scope) {
-        symbolCount++;
-
-        symbolTable[symbolCount].name = (char*)malloc(30 * sizeof(char));
-        strcpy(symbolTable[symbolCount].name, name);
-
-        symbolTable[symbolCount].decLine = lineNo;
-        symbolTable[symbolCount].lastLine = lineNo;
-        symbolTable[symbolCount].scope = scope;
-    }
-
-    static void printSTable() {
-        printf("\n\nSl No.\tSymbol\t\tDeclaration Line\tLast Used Line\t\tScope\n\n");
-        printf("==============================================================================\n\n");
-		int i = 0;
-		for(i = 0; i <= symbolCount; i++)
-		{
-			printf("%d\t%s\t\t%d\t\t\t%d\t\t\t%d\n", i+1, symbolTable[i].name, symbolTable[i].decLine, symbolTable[i].lastLine, symbolTable[i].scope);
-		}
-        printf("\n\n");
-    }
+    int depth = 0;
+    static int stack_level = -1, indent_stack[STACK_SIZE];
 
     static void push(int level) {
         if (++stack_level < STACK_SIZE) 
@@ -83,19 +36,6 @@
     static int indent_depth(char* indents) {
         return strlen(indents);
     }
-
-    static void handle_error(int lineno) {
-        errors[++error_number] = lineno;
-    }
-
-    static void printErrors() {
-        for (int i = 0; i <= error_number; i++) {
-            printf("Syntax error in line %d\n", errors[i]);
-        }
-    }
-
-    int depth = 0;
-
 %}
 
 %option yylineno
@@ -103,32 +43,30 @@ whitespace [ ]
 trip_squote '''
 
 %%
-\n[\t]* {
+[\t]*   {
             depth = indent_depth(yytext);
-            //return Depth = %d", depth);
+            printf("Depth = %d", depth);
 
-            if (depth == 0) {
-                return NEWLINE;
-            }
-            if(depth==top())
-            {
-                return NOCHANGE;
-            }
             if(depth < top()) {
                 while(depth < top())
                     pop();
                 
                 // printf("Depth = %d", depth);
-                if(depth != top())
-                    handle_error(yylineno);
+                // if(depth != top())
+                //     handle_error(yylineno);
 
-
+                printf("DD");
                 return DEDENT;
+            }
+
+            if(depth == top()) {
+                printf("ND");
+                return NOCHANGE;
             }
 
             if(depth > top()) {
                 push(depth);
-
+                printf("ID");
                 return INDENT;
             }
             
@@ -163,39 +101,27 @@ trip_squote '''
 "[" {return OB;}
 "]" {return CB;}
 "=" {return EQL;}
-[0-9]+ {return NUMBER;}
-[_a-zA_Z][_a-zA_Z0-9]*  {
-
-                            int check = searchSymbol(yytext);
-                            // return Check - %d\n", check);
-
-                            if(check == -1)  {
-                                insertSymbol(yytext, yylineno, top());
-                            }
-                            else {
-                                modifySymbol(check, yylineno);
-                            }
-                            
-                            return ID;
-                        }
-\"([^\"\n])*\" {return STRING;}
-\'([^\'\n])*\' {return STRING;}
+[0-9]+ {yylval.num = strdup(yytext); return NUMBER;}
+[_a-zA_Z][_a-zA_Z0-9]*  {yylval.text = strdup(yytext); return ID;}
+\"([^\"\n])*\" {yylval.str = strdup(yytext); return STRING;}
+\'([^\'\n])*\' {yylval.str = strdup(yytext); return STRING;}
 "#".* {}
 {trip_squote}[^{trip_squote}]*{trip_squote} {}
 {whitespace} {}
+"\n" {return NEWLINE;}
+<<EOF>> {return ENDFILE;}
 
 .   {
-        // printf("Syntax error in line %d\n", yylineno);
-        handle_error(yylineno);
+        printf("Syntax error in line %d\n", yylineno);
+        // handle_error(yylineno);
     }
 
 %%
 
 
-int main() {
-    push(1);
-    yylex();
-    printSTable();
-    printErrors();
-    return 0;
-}
+// int main() {
+//     push(1);
+//     yylex();
+//     printErrors();
+//     return 0;
+// }

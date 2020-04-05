@@ -1,17 +1,9 @@
-x = 2
-a = 7
+x = 3
+a = 5
 
-def y():
-	a = 6
-	b = 0
-	return 3
-
-if(x == 2):
-	while(x >= 3):
-		ab = "ss"
-
-'''
-fwvwav
- dvd
-'''
+if True:
+	while(x == 2):
+		a = a + 1
+		b = 10
+	a = 9
 
