@@ -58,31 +58,34 @@ extern int yydebug;
     PASS = 268,
     BREAK = 269,
     RETURN = 270,
-    COLON = 271,
-    GT = 272,
-    LT = 273,
-    GE = 274,
-    LE = 275,
-    EE = 276,
-    NE = 277,
-    TRUE = 278,
-    FALSE = 279,
-    OP = 280,
-    CP = 281,
-    OB = 282,
-    CB = 283,
-    NUMBER = 284,
-    ID = 285,
-    STRING = 286,
-    ENDFILE = 287,
-    EQL = 288,
-    PL = 289,
-    MN = 290,
-    ML = 291,
-    DV = 292,
-    NOT = 293,
-    AND = 294,
-    OR = 295
+    DEF = 271,
+    COLON = 272,
+    GT = 273,
+    LT = 274,
+    GE = 275,
+    LE = 276,
+    EE = 277,
+    NE = 278,
+    TRUE = 279,
+    FALSE = 280,
+    OP = 281,
+    CP = 282,
+    OB = 283,
+    CB = 284,
+    NUMBER = 285,
+    ID = 286,
+    STRING = 287,
+    COMMA = 288,
+    ENDFILE = 289,
+    EQL = 290,
+    PL = 291,
+    MN = 292,
+    ML = 293,
+    DV = 294,
+    NOT = 295,
+    AND = 296,
+    OR = 297,
+    LOWER_THAN_EL = 298
   };
 #endif
 /* Tokens.  */
@@ -99,44 +102,48 @@ extern int yydebug;
 #define PASS 268
 #define BREAK 269
 #define RETURN 270
-#define COLON 271
-#define GT 272
-#define LT 273
-#define GE 274
-#define LE 275
-#define EE 276
-#define NE 277
-#define TRUE 278
-#define FALSE 279
-#define OP 280
-#define CP 281
-#define OB 282
-#define CB 283
-#define NUMBER 284
-#define ID 285
-#define STRING 286
-#define ENDFILE 287
-#define EQL 288
-#define PL 289
-#define MN 290
-#define ML 291
-#define DV 292
-#define NOT 293
-#define AND 294
-#define OR 295
+#define DEF 271
+#define COLON 272
+#define GT 273
+#define LT 274
+#define GE 275
+#define LE 276
+#define EE 277
+#define NE 278
+#define TRUE 279
+#define FALSE 280
+#define OP 281
+#define CP 282
+#define OB 283
+#define CB 284
+#define NUMBER 285
+#define ID 286
+#define STRING 287
+#define COMMA 288
+#define ENDFILE 289
+#define EQL 290
+#define PL 291
+#define MN 292
+#define ML 293
+#define DV 294
+#define NOT 295
+#define AND 296
+#define OR 297
+#define LOWER_THAN_EL 298
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 58 "parser.y" /* yacc.c:1909  */
+#line 86 "parser.y" /* yacc.c:1909  */
  
 	char* text;
 	char* num;
 	char* str;
+    int depth;
 
-#line 140 "y.tab.h" /* yacc.c:1909  */
+#line 147 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

@@ -1,9 +1,17 @@
-x = 3
-a = 5
+a = 0
+while True:
+	x = 0
+	a = 5
+	if(x ==0):
+		a = a+a
+	elif(x > 0):
+		x = 0
+	else:
+		x = 1
+	
+	break
 
-if True:
-	while(x == 2):
-		a = a + 1
-		b = 10
-	a = 9
+def fun(a, b):
+	print("HI")
 
+fun(3, 4)
