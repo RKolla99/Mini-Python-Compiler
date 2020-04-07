@@ -4,8 +4,13 @@
     #include <stdlib.h>
     #include <stdarg.h>
 
+    #define RESET   "\033[0m"
+    #define RED     "\033[31m"
+    #define GREEN   "\033[32m"
+
 	extern int yylineno;
     extern int depth;
+    extern int isError;
     extern int top();
     extern int pop();
 
@@ -71,7 +76,7 @@
             symbolTable[symbolCount].name = (char*)malloc(30 * sizeof(char));
             symbolTable[symbolCount].scope = (char*)malloc(30 * sizeof(char));
 
-            
+
             strcpy(symbolTable[symbolCount].type, type);
             strcpy(symbolTable[symbolCount].name, name);
 
@@ -107,17 +112,17 @@
         depth = 1;
     }
 
-    node* createOp(char* operation,int noOperands,node* left,node* middle,node* right)
+    node* createOp(char* operation, int noOperands ,node* left ,node* middle ,node* right)
     {
 
-        node* newNode = (node*)calloc(1,sizeof(node));
+        node* newNode = (node*)calloc(1, sizeof(node));
 
         newNode->left = left;
         newNode->middle = middle;
         newNode->right = right;
         newNode->noOperands = noOperands;
 
-        newNode->nodeType = (char*)malloc( sizeof(char) * ( strlen(operation) + 1 ) );
+        newNode->nodeType = (char*)malloc(sizeof(char) * ( strlen(operation) + 1 ));
         strcpy(newNode->nodeType,operation);
 
         return newNode;
@@ -189,66 +194,76 @@
 %%
 
 startparse: {init();} start  ENDFILE   {
-                                printf("\nValid Python Syntax\n"); 
-                                printSTable();
-                                displayAST($2);
+                                if (isError == 0){
+                                    // No errors
+
+                                    printf(GREEN "\nValid Python Syntax\n" RESET); 
+                                    printSTable();
+                                    displayAST($2);
+                                    printf("\n");
+                                }
+                                else {
+                                    printf(RED "\nInvalid Python Syntax\n" RESET); 
+                                    displayAST($2);
+                                    printf("\n");
+                                }
                                 exit(0);
                             } ;
-start: NEWLINE start {$$=$2;} 
+start: NEWLINE start {$$ = $2;} 
     | statements NEWLINE start {$$ = createOp("NewLine", 2, $1, $3,NULL); };
-    | statements NEWLINE {$$=$1;};
+    | statements NEWLINE {$$ = $1;};
 
-constant: NUMBER {$$ = createOp($<text>1,0,NULL,NULL,NULL); } 
-        | STRING {$$ = createOp($<text>1,0,NULL,NULL,NULL); };
-term: ID {$$ = createOp($<text>1,0,NULL,NULL,NULL); }
+constant: NUMBER {$$ = createOp($<text>1, 0, NULL, NULL, NULL);} 
+        | STRING {$$ = createOp($<text>1, 0, NULL, NULL, NULL);};
+term: ID {$$ = createOp($<text>1, 0, NULL, NULL, NULL);}
     | constant {$$ = $1;} ;
-expressions: arith_expr {$$=$1;}| bool_expr {$$=$1;};
-arith_expr: term {$$=$1;} 
-            | arith_expr PL arith_expr {$$ = createOp("+", 2, $1, $3,NULL);}
-			| arith_expr MN arith_expr {$$ = createOp("-", 2, $1, $3,NULL);}
-			| arith_expr ML arith_expr {$$ = createOp("*", 2, $1, $3,NULL);}
-			| arith_expr DV arith_expr {$$ = createOp("/", 2, $1, $3,NULL);}
-            | MN arith_expr {$$ = createOp("-", 1, $2,NULL,NULL);}
+expressions: arith_expr {$$ = $1;} | bool_expr {$$ = $1;};
+arith_expr: term {$$ = $1;} 
+            | arith_expr PL arith_expr {$$ = createOp("+", 2, $1, $3, NULL);}
+			| arith_expr MN arith_expr {$$ = createOp("-", 2, $1, $3, NULL);}
+			| arith_expr ML arith_expr {$$ = createOp("*", 2, $1, $3, NULL);}
+			| arith_expr DV arith_expr {$$ = createOp("/", 2, $1, $3, NULL);}
+            | MN arith_expr {$$ = createOp("-", 1, $2, NULL, NULL);}
             | OP arith_expr CP {$$ = $2;};
-bool_term: TRUE {$$ = createOp("True",0,NULL,NULL,NULL); }
-          | FALSE {$$ = createOp("False",0,NULL,NULL,NULL); }
-          | arith_expr EE arith_expr {$$ = createOp("==", 2, $1, $3,NULL);}
+bool_term: TRUE {$$ = createOp("True", 0, NULL, NULL, NULL); }
+          | FALSE {$$ = createOp("False", 0, NULL, NULL, NULL); }
+          | arith_expr EE arith_expr {$$ = createOp("==", 2, $1, $3, NULL);}
           | bool_factor {$$ = $1;};
-bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2,NULL,NULL);}
+bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2, NULL, NULL);}
           | OP bool_expr CP {$$ = $2;};  
-bool_expr: arith_expr GT arith_expr {$$ = createOp(">", 2, $1, $3,NULL);}
-          | arith_expr LT arith_expr {$$ = createOp("<", 2, $1, $3,NULL);}
-          | arith_expr GE arith_expr {$$ = createOp(">=", 2, $1, $3,NULL);}
-          | arith_expr LE arith_expr {$$ = createOp("<=", 2, $1, $3,NULL);}
-		  | bool_term AND bool_term {$$ = createOp("AND", 2, $1, $3,NULL);}
-		  | bool_term OR bool_term {$$ = createOp("or", 2, $1, $3,NULL);}
-		  | bool_term {$$=$1;};
+bool_expr: arith_expr GT arith_expr {$$ = createOp(">", 2, $1, $3, NULL);}
+          | arith_expr LT arith_expr {$$ = createOp("<", 2, $1, $3, NULL);}
+          | arith_expr GE arith_expr {$$ = createOp(">=", 2, $1, $3, NULL);}
+          | arith_expr LE arith_expr {$$ = createOp("<=", 2, $1, $3, NULL);}
+		  | bool_term AND bool_term {$$ = createOp("AND", 2, $1, $3, NULL);}
+		  | bool_term OR bool_term {$$ = createOp("or", 2, $1, $3, NULL);}
+		  | bool_term {$$ = $1;};
 
-import_stmt: IMPORT ID { $$ = createOp("import", 1, createOp("PackageName", $<text>2, NULL,NULL,NULL),NULL,NULL );};
-pass_stmt: PASS {$$ = createOp("pass", 0,NULL,NULL,NULL);};
-break_stmt: BREAK {$$ = createOp("break", 0,NULL,NULL,NULL);};
+import_stmt: IMPORT ID {$$ = createOp("import", 1, createOp("PackageName", $<text>2, NULL, NULL, NULL), NULL, NULL);};
+pass_stmt: PASS {$$ = createOp("pass", 0, NULL, NULL, NULL);};
+break_stmt: BREAK {$$ = createOp("break", 0, NULL, NULL, NULL);};
 assign_stmt: ID EQL expressions {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0,NULL,NULL,NULL), $3,NULL);
+                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
                                 }
             | ID EQL func_call  {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0,NULL,NULL,NULL), $3,NULL);
-                                }; 
+                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
+                                };
 
-if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL {$$ = createOp("If", 2, $2, $4,NULL);}
+if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL {$$ = createOp("If", 2, $2, $4, NULL);}
        | IF bool_expr COLON start_suite elif_stmts {$$ = createOp("If", 3, $2, $4, $5);};
 elif_stmts: ELIF bool_expr COLON start_suite elif_stmts {$$= createOp("Elif", 3, $2, $4, $5);}
-          | else_stmt {$$= $1;};
-else_stmt: ELSE COLON start_suite {$$ = createOp("Else", 1, $3,NULL,NULL);};
+          | else_stmt {$$ = $1;};
+else_stmt: ELSE COLON start_suite {$$ = createOp("Else", 1, $3, NULL, NULL);};
 
-while_stmt: WHILE bool_expr COLON start_suite {$$ = createOp("While", 2, $2, $4,NULL);};
+while_stmt: WHILE bool_expr COLON start_suite {$$ = createOp("While", 2, $2, $4, NULL);};
 
 args_list: COMMA ID args_list | ;
-args: ID args_list {$$ = createOp("TO DO", 0,NULL,NULL,NULL);} 
-    | {$$ = createOp("Void", 0,NULL,NULL,NULL);};
+args: ID args_list {$$ = createOp("TO DO", 0, NULL, NULL, NULL);} 
+    | {$$ = createOp("Void", 0, NULL, NULL, NULL);};
 call_list: COMMA term call_list | ;
-call_params: term call_list {$$ = createOp("TO DO", 0,NULL,NULL,NULL);};
+call_params: term call_list {$$ = createOp("TO DO", 0, NULL, NULL, NULL);};
 
 func_def: DEF ID OP args CP COLON {
                                     insertSymbol("Function", $<text>2, yylineno, currentScope);
@@ -256,40 +271,45 @@ func_def: DEF ID OP args CP COLON {
                                   } 
           start_suite {
                         strcpy(currentScope, "Global");
-                        $$ = createOp("Func_Name", 3, createOp($<text>2,0,NULL,NULL,NULL), $4, $8);  
+                        $$ = createOp("Func_Name", 3, createOp($<text>2, 0, NULL, NULL, NULL), $4, $8);  
                       };
 func_call: ID OP call_params CP {
                                     insertSymbol("Function", $<text>2, yylineno, currentScope);
-                                    $$ = createOp("Func_Call", 2, createOp($<text>1,0,NULL,NULL,NULL), $3,NULL);
+                                    $$ = createOp("Func_Call", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
                                 } ;
 
-basic_stmt: import_stmt {$$=$1;}
-            | pass_stmt {$$=$1;}
-            | break_stmt {$$=$1;}
-            | assign_stmt {$$=$1;}
-            | expressions {$$=$1;};
+basic_stmt: import_stmt {$$ = $1;}
+            | pass_stmt {$$ = $1;}
+            | break_stmt {$$ = $1;}
+            | assign_stmt {$$ = $1;}
+            | expressions {$$ = $1;};
 cmpd_stmt: if_stmt {$$ = $1;}
         | while_stmt {$$ = $1;};
 
 statements: basic_stmt {$$ = $1;}
         | cmpd_stmt {$$ = $1;}
         | func_def {$$ = $1;}
-        | func_call {$$ = $1;};
+        | func_call {$$ = $1;}
+        | error NEWLINE {
+                            yyclearin;
+                            isError = 1;
+                            $$ = createOp("SyntaxError", 0, NULL, NULL, NULL);
+                        };
 
 start_suite: basic_stmt {$$ = $1;} 
-            | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4,NULL);};
+            | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4, NULL);};
 
-suite: NEWLINE NOCHANGE statements suite {$$ = createOp("Next", 2, $3, $4,NULL);}
+suite: NEWLINE NOCHANGE statements suite {$$ = createOp("Next", 2, $3, $4, NULL);}
         | NEWLINE end_suite {$$ = $2;};
 
-end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL,NULL,NULL);}
-           | DEDENT statements {$$ = createOp("EndBlock", 1, $2,NULL,NULL);}
-           | {$$ = createOp("EndBlock", 0, NULL,NULL,NULL); resetDepth();};
+end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL, NULL, NULL);}
+           | DEDENT statements {$$ = createOp("EndBlock", 1, $2, NULL, NULL);}
+           | {$$ = createOp("EndBlock", 0, NULL, NULL, NULL); resetDepth();};
 
 %%
 
-void yyerror(const char* text) {
-	printf("Syntax Error at Line %d\n", yylineno);
+int yyerror(const char* text) {
+	printf(RED "Syntax Error at Line %d\n   " RESET, yylineno);
 }
 
 int main() {

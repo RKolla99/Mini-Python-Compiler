@@ -7,7 +7,7 @@
 
     int depth = 0;
     static int stack_level = -1, indent_stack[STACK_SIZE];
-    int startFlag = 1, lastDedent = 1;
+    int startFlag = 1, lastDedent = 1, isError = 0;
 
     static void push(int level) {
         if (++stack_level < STACK_SIZE) 
@@ -135,7 +135,8 @@ trip_squote '''
 <<EOF>> {print_token("ENDFILE\n"); return ENDFILE;}
 
 .   {
-        printf("Syntax error in line %d\n", yylineno);
+        isError = 1;
+        yyerror();
         // handle_error(yylineno);
     }
 
