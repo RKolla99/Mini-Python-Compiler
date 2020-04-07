@@ -12,6 +12,9 @@ while True:
 	break
 
 def fun(a, b):
+	z = 0
 	print("HI")
+
+y = "Hello"
 
 fun(3, 4)

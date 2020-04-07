@@ -21,6 +21,13 @@
 
     static int symbolCount = -1;
 
+    char* currentScope;
+
+    static void init() {
+        currentScope = (char*)malloc(30 * sizeof(char));
+        strcpy(currentScope, "Global");
+    }
+
     static int searchSymbol(char* name) {
         int i = 0;
         for (i = 0; i < symbolCount + 1; i++) {
@@ -75,12 +82,20 @@
         printf("\n\n");
     }
 
+    static void createNestedScope(char* function) {
+        char* temp = (char*)malloc(30 * sizeof(char));
+        strcpy(temp, strcat(" > ", function));
+        strcpy(currentScope, strcat(currentScope, temp));
+    }
+
     void resetDepth() {
         while(top())
             pop();
 
         depth = 1;
     }
+
+
 %}
 
 %union { 
@@ -105,7 +120,7 @@
 
 %%
 
-startparse: start ENDFILE   {
+startparse: {init();} start  ENDFILE   {
                                 printf("\nValid Python Syntax\n"); 
                                 printSTable();
                                 exit(0);
@@ -139,10 +154,10 @@ import_stmt: IMPORT ID;
 pass_stmt: PASS;
 break_stmt: BREAK;
 assign_stmt: ID EQL expressions {
-                                    insertSymbol("Identifier", $<text>1, yylineno, "Global");
+                                    insertSymbol("Identifier", $<text>1, yylineno, currentScope);
                                 }
             | ID EQL func_call  {
-                                    insertSymbol("Identifier", $<text>1, yylineno, "Global");
+                                    insertSymbol("Identifier", $<text>1, yylineno, currentScope);
                                 }; 
 
 if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL |
@@ -158,11 +173,12 @@ call_list: COMMA term call_list | ;
 call_params: term call_list ;
 
 func_def: DEF ID OP args CP COLON {
-                                    insertSymbol("Function", $<text>2, yylineno, "Global");
+                                    insertSymbol("Function", $<text>2, yylineno, currentScope);
+                                    currentScope = $<text>2;
                                   } 
-          start_suite ;
+          start_suite {strcpy(currentScope, "Global");};
 func_call: ID OP call_params CP {
-                                    insertSymbol("Function", $<text>2, yylineno, "Global");
+                                    insertSymbol("Function", $<text>2, yylineno, currentScope);
                                 } ;
 
 basic_stmt: import_stmt | pass_stmt | break_stmt | assign_stmt | expressions;
