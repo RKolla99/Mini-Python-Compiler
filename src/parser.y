@@ -32,7 +32,7 @@
         struct ASTNode* middle;
         struct ASTNode* right;
         symbol *id; 
-    }node;
+    } node;
     
 
     typedef struct quad
@@ -46,9 +46,11 @@
 
     static symbol symbolTable[500];
 
+	static int startFlag = 0;
     static int symbolCount = -1;
     static int labelIndex=0;
-    static int  qIndex=0;
+    static int qIndex=0;
+	static int nodeCount = 0;
     static Quad * threeAddressQueue = NULL;
     static char* currentScope;
 	static char *tString = NULL, *lString = NULL;
@@ -115,7 +117,7 @@
 		{
 			printf("%d\t%s\t\t%s\t\t%d\t\t\t%d\t\t\t%s\n", i+1, symbolTable[i].type, symbolTable[i].name, symbolTable[i].decLine, symbolTable[i].lastLine, symbolTable[i].scope);
 		}
-        printf("\n\n");
+        printf("\n\n\n\n");
     }
 
     static void createNestedScope(char* function)
@@ -133,28 +135,34 @@
         depth = 1;
     }
 
-    node* createOp(char* operation,int noOperands,node* left,node* middle,node* right)
+    node* createOp(char* operation, int noOperands, node* left, node* middle, node* right)
     {
-
-        node* newNode = (node*)calloc(1,sizeof(node));
+        node* newNode = (node*)calloc(1, sizeof(node));
 
         newNode->left = left;
         newNode->middle = middle;
         newNode->right = right;
         newNode->noOperands = noOperands;
 
-        newNode->nodeType = (char*)malloc( sizeof(char) * ( strlen(operation) + 1 ) );
-        strcpy(newNode->nodeType,operation);
+        newNode->nodeType = (char*)malloc(sizeof(char) * ( strlen(operation) + 1 ));
+        strcpy(newNode->nodeType, operation);
+
+		newNode->nodeNo = nodeCount++;
 
         return newNode;
     }
 
     void displayAST(node* root)
     {
+		if(startFlag == 0) 
+		{
+			printf("==========================================================Abstract Syntax Tree============================================================\n\n");
+			startFlag = 1;
+		}
         if(root->noOperands == 3)
         {
             printf(" ( ");
-            printf(" %s ",root->nodeType);
+            printf(" %s ", root->nodeType);
             displayAST(root->left);
             displayAST(root->middle);
             displayAST(root->right);
@@ -163,7 +171,7 @@
         else if(root->noOperands == 2)
         {
             printf(" ( ");
-            printf(" %s ",root->nodeType);
+            printf(" %s ", root->nodeType);
             displayAST(root->left);
             displayAST(root->middle);
             printf(" ) ");
@@ -171,17 +179,18 @@
         else if(root->noOperands == 1)
         {
             printf(" ( ");
-            printf(" %s ",root->nodeType);
+            printf(" %s ", root->nodeType);
             displayAST(root->left);
             printf(" ) ");
         }
         else if(root->noOperands == 0)
         {
             printf(" ( ");
-            printf(" %s ",root->nodeType);
+            printf(" %s ", root->nodeType);
             printf(" ) ");
         }
     }
+
     void NumbertoString(int number, char * arr)
     {
         if(arr == NULL)
@@ -193,7 +202,8 @@
             sprintf(arr, "%d", number);
         }
     }
-    char * makeStr(int number,int flag)
+
+    char * makeStr(int number, int flag)
     {
         char *A=(char *)malloc(sizeof(char)*10);
 		NumbertoString(number,A);
@@ -215,6 +225,7 @@
 		
 
     }
+
     void makeQ(char *result, char *op1, char *op2, char *operator)
 	{
 		
@@ -229,6 +240,7 @@
 		threeAddressQueue[qIndex].Index = qIndex;
 		qIndex++;
 	}
+
     int isBinaryOperator(char * Op)
     {
             if((!strcmp(Op, "+")) || (!strcmp(Op, "*")) || (!strcmp(Op, "/")) || (!strcmp(Op, ">=")) || (!strcmp(Op, "<=")) || (!strcmp(Op, "<")) || (!strcmp(Op, ">")) || 
@@ -242,6 +254,7 @@
 				return 0;
 			}
     }
+
     void generateThreeAddressCode(node * root)
     {
         if(root == NULL)
@@ -250,10 +263,9 @@
 		}
         else if(!strcmp(root->nodeType, "Identifier") )
         {
-          
-				printf("T%d = %s\n", root->nodeNo, root->nodeType);
-				makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
-			    return;
+			printf("T%d = %s\n", root->nodeNo, root->nodeType);
+			makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
+			return;
         }
         else if((!strcmp(root->nodeType, "If")) || (!strcmp(root->nodeType, "Elif")))
 		{			
@@ -512,19 +524,18 @@
 
 
 startparse: {init();} start  ENDFILE   {
-                                if (isError == 0)				{
-                                     // No errors
-                                     printf(GREEN "\nValid Python Syntax\n" RESET); 
-                                     printSTable();
-                                     displayAST($2);
-                                     printf("\n");
-									 printf("\nThe Intermediate code\n");
-                                	 generateThreeAddressCode($2);
+                                if (isError == 0) {
+									// No errors
+									printf(GREEN "\nValid Python Syntax\n" RESET); 
+									printSTable();
+									displayAST($2);
+									printf("\n\n\n====Intermediate code====\n\n");
+									generateThreeAddressCode($2);
                                  }
                                  else {
-                                     printf(RED "\nInvalid Python Syntax\n" RESET); 
-                                     displayAST($2);
-                                     printf("\n");
+									printf(RED "\nInvalid Python Syntax\n" RESET); 
+									displayAST($2);
+									printf("\n");
                                  }
 								 exit(0);
                             } ;
@@ -532,79 +543,79 @@ start: NEWLINE start {$$=$2;}
     | statements NEWLINE start {$$ = createOp("NewLine", 2, $1, $3,NULL); };
     | statements NEWLINE {$$=$1;};
 
-constant: NUMBER {$$ = createOp($<text>1,0,NULL,NULL,NULL); } 
-        | STRING {$$ = createOp($<text>1,0,NULL,NULL,NULL); };
-term: ID {$$ = createOp($<text>1,0,NULL,NULL,NULL); }
+constant: NUMBER {$$ = createOp($<text>1, 0, NULL, NULL, NULL); } 
+        | STRING {$$ = createOp($<text>1, 0, NULL, NULL, NULL); };
+term: ID {$$ = createOp($<text>1, 0, NULL, NULL, NULL); }
     | constant {$$ = $1;} ;
 expressions: arith_expr {$$=$1;}| bool_expr {$$=$1;};
 arith_expr: term {$$=$1;} 
-            | arith_expr PL arith_expr {$$ = createOp("+", 2, $1, $3,NULL);}
-			| arith_expr MN arith_expr {$$ = createOp("-", 2, $1, $3,NULL);}
-			| arith_expr ML arith_expr {$$ = createOp("*", 2, $1, $3,NULL);}
-			| arith_expr DV arith_expr {$$ = createOp("/", 2, $1, $3,NULL);}
-            | MN arith_expr {$$ = createOp("-", 1, $2,NULL,NULL);}
+            | arith_expr PL arith_expr {$$ = createOp("+", 2, $1, $3, NULL);}
+			| arith_expr MN arith_expr {$$ = createOp("-", 2, $1, $3, NULL);}
+			| arith_expr ML arith_expr {$$ = createOp("*", 2, $1, $3, NULL);}
+			| arith_expr DV arith_expr {$$ = createOp("/", 2, $1, $3, NULL);}
+            | MN arith_expr {$$ = createOp("-", 1, $2, NULL, NULL);}
             | OP arith_expr CP {$$ = $2;};
-bool_term: TRUE {$$ = createOp("True",0,NULL,NULL,NULL); }
-          | FALSE {$$ = createOp("False",0,NULL,NULL,NULL); }
-          | arith_expr EE arith_expr {$$ = createOp("==", 2, $1, $3,NULL);}
+bool_term: TRUE {$$ = createOp("True", 0, NULL, NULL, NULL); }
+          | FALSE {$$ = createOp("False", 0, NULL, NULL, NULL); }
+          | arith_expr EE arith_expr {$$ = createOp("==", 2, $1, $3, NULL);}
           | bool_factor {$$ = $1;};
-bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2,NULL,NULL);}
+bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2, NULL, NULL);}
           | OP bool_expr CP {$$ = $2;};  
-bool_expr: arith_expr GT arith_expr {$$ = createOp(">", 2, $1, $3,NULL);}
-          | arith_expr LT arith_expr {$$ = createOp("<", 2, $1, $3,NULL);}
-          | arith_expr GE arith_expr {$$ = createOp(">=", 2, $1, $3,NULL);}
-          | arith_expr LE arith_expr {$$ = createOp("<=", 2, $1, $3,NULL);}
-		  | bool_term AND bool_term {$$ = createOp("AND", 2, $1, $3,NULL);}
-		  | bool_term OR bool_term {$$ = createOp("or", 2, $1, $3,NULL);}
+bool_expr: arith_expr GT arith_expr {$$ = createOp(">", 2, $1, $3, NULL);}
+          | arith_expr LT arith_expr {$$ = createOp("<", 2, $1, $3, NULL);}
+          | arith_expr GE arith_expr {$$ = createOp(">=", 2, $1, $3, NULL);}
+          | arith_expr LE arith_expr {$$ = createOp("<=", 2, $1, $3, NULL);}
+		  | bool_term AND bool_term {$$ = createOp("AND", 2, $1, $3, NULL);}
+		  | bool_term OR bool_term {$$ = createOp("or", 2, $1, $3, NULL);}
 		  | bool_term {$$=$1;};
 
-import_stmt: IMPORT ID {$$ = createOp("import", 1, createOp($<text>2,0, NULL, NULL, NULL), NULL, NULL);};   
-pass_stmt: PASS {$$ = createOp("pass", 0,NULL,NULL,NULL);};
-break_stmt: BREAK {$$ = createOp("break", 0,NULL,NULL,NULL);};
-return_stmt : RETURN {$$ = createOp("return", 0,NULL,NULL,NULL);};
+import_stmt: IMPORT ID {$$ = createOp("import", 1, createOp($<text>2, 0, NULL, NULL, NULL), NULL, NULL);};   
+pass_stmt: PASS {$$ = createOp("pass", 0, NULL, NULL, NULL);};
+break_stmt: BREAK {$$ = createOp("break", 0, NULL, NULL, NULL);};
+return_stmt : RETURN {$$ = createOp("return", 0, NULL, NULL, NULL);};
 
 assign_stmt: ID EQL expressions {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0,NULL,NULL,NULL), $3,NULL);
+                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3,NULL);
                                 }
             | ID EQL func_call  {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0,NULL,NULL,NULL), $3,NULL);
+                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
                                 }; 
 
-if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL {$$ = createOp("If", 2, $2, $4,NULL);}
+if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL {$$ = createOp("If", 2, $2, $4, NULL);}
        | IF bool_expr COLON start_suite elif_stmts {$$ = createOp("If", 3, $2, $4, $5);};
 elif_stmts: ELIF bool_expr COLON start_suite elif_stmts {$$= createOp("Elif", 3, $2, $4, $5);}
           | else_stmt {$$= $1;};
-else_stmt: ELSE COLON start_suite {$$ = createOp("Else", 1, $3,NULL,NULL);};
+else_stmt: ELSE COLON start_suite {$$ = createOp("Else", 1, $3, NULL, NULL);};
 
-while_stmt: WHILE bool_expr COLON start_suite {$$ = createOp("While", 2, $2, $4,NULL);};
+while_stmt: WHILE bool_expr COLON start_suite {$$ = createOp("While", 2, $2, $4, NULL);};
 
 args_list: COMMA ID args_list | ;
-args: ID args_list {$$ = createOp("TO DO", 0,NULL,NULL,NULL);} 
-    | {$$ = createOp("Void", 0,NULL,NULL,NULL);};
+args: ID args_list {$$ = createOp("TO DO", 0, NULL, NULL, NULL);} 
+    | {$$ = createOp("Void", 0, NULL, NULL, NULL);};
 call_list: COMMA term call_list | ;
-call_params: term call_list {$$ = createOp("TO DO", 0,NULL,NULL,NULL);};
+call_params: term call_list {$$ = createOp("TO DO", 0, NULL, NULL, NULL);};
 
 func_def: DEF ID OP args CP COLON {
                                     insertSymbol("Function", $<text>2, yylineno, currentScope);
-                                    currentScope = $<text>2;
+                                    strcpy(currentScope, $<text>2);
                                   } 
           start_suite {
                         strcpy(currentScope, "Global");
-                        $$ = createOp("Func_Name", 3, createOp($<text>2,0,NULL,NULL,NULL), $4, $8);  
+                        $$ = createOp("Func_Name", 3, createOp($<text>2, 0, NULL, NULL, NULL), $4, $8);  
                       };
 func_call: ID OP call_params CP {
                                     insertSymbol("Function", $<text>2, yylineno, currentScope);
-                                    $$ = createOp("Func_Call", 2, createOp($<text>1,0,NULL,NULL,NULL), $3,NULL);
+                                    $$ = createOp("Func_Call", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
                                 } ;
 
-basic_stmt: import_stmt {$$=$1;}
-            | pass_stmt {$$=$1;}
-            | break_stmt {$$=$1;}
-            | assign_stmt {$$=$1;}
-            | expressions {$$=$1;}
-            | return_stmt {$$=$1;};
+basic_stmt: import_stmt {$$ = $1;}
+            | pass_stmt {$$ = $1;}
+            | break_stmt {$$ = $1;}
+            | assign_stmt {$$ = $1;}
+            | expressions {$$ = $1;}
+            | return_stmt {$$ = $1;};
 
 
 cmpd_stmt: if_stmt {$$ = $1;}
@@ -621,14 +632,14 @@ statements: basic_stmt {$$ = $1;}
                          };
 
 start_suite: basic_stmt {$$ = $1;} 
-            | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4,NULL);};
+            | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4, NULL);};
 
-suite: NEWLINE NOCHANGE statements suite {$$ = createOp("Next", 2, $3, $4,NULL);}
+suite: NEWLINE NOCHANGE statements suite {$$ = createOp("Next", 2, $3, $4, NULL);}
         | NEWLINE end_suite {$$ = $2;};
 
-end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL,NULL,NULL);}
-           | DEDENT statements {$$ = createOp("EndBlock", 1, $2,NULL,NULL);}
-           | {$$ = createOp("EndBlock", 0, NULL,NULL,NULL); resetDepth();};
+end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL, NULL, NULL);}
+           | DEDENT statements {$$ = createOp("EndBlock", 1, $2, NULL, NULL);}
+           | {$$ = createOp("EndBlock", 0, NULL, NULL, NULL); resetDepth();};
 
 %%
 
