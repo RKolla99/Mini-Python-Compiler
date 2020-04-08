@@ -4,13 +4,8 @@
     #include <stdlib.h>
     #include <stdarg.h>
 
-    #define RESET   "\033[0m"
-    #define RED     "\033[31m"
-    #define GREEN   "\033[32m"
-
 	extern int yylineno;
     extern int depth;
-    extern int isError;
     extern int top();
     extern int pop();
 
@@ -30,17 +25,33 @@
         struct ASTNode* left;
         struct ASTNode* middle;
         struct ASTNode* right;
-        
         symbol *id; 
     }node;
+    
+
+    typedef struct quad
+    {
+        char * Result;
+        char * op1;
+        char * op2;
+        char * operator;
+        int Index;
+    }Quad;
 
     static symbol symbolTable[500];
 
     static int symbolCount = -1;
-
-    char* currentScope;
-
-    static void init() {
+    static int labelIndex=0;
+    static int  qIndex=0;
+    static Quad * threeAddressQueue = NULL;
+    static char* currentScope;
+	static char *tString = NULL, *lString = NULL;
+	
+    static void init() 
+    {
+		tString = (char*)calloc(10, sizeof(char));
+		lString = (char*)calloc(10, sizeof(char));
+		threeAddressQueue = (Quad*)calloc(1000, sizeof(Quad));
         currentScope = (char*)malloc(30 * sizeof(char));
         strcpy(currentScope, "Global");
     }
@@ -56,11 +67,13 @@
         return -1;
     }
 
-    static void modifySymbol(int symbolId, int lineNo) {
+    static void modifySymbol(int symbolId, int lineNo) 
+    {
 		symbolTable[symbolId].lastLine = lineNo;
 	}
 
-    static void insertSymbol(char* type, char* name, int lineNo, char* scope) {
+    static void insertSymbol(char* type, char* name, int lineNo, char* scope)
+    {
         int find = searchSymbol(name);
         --lineNo;
 
@@ -71,12 +84,11 @@
         else {
 
             symbolCount++;
-
             symbolTable[symbolCount].type = (char*)malloc(30 * sizeof(char));
             symbolTable[symbolCount].name = (char*)malloc(30 * sizeof(char));
             symbolTable[symbolCount].scope = (char*)malloc(30 * sizeof(char));
 
-
+            
             strcpy(symbolTable[symbolCount].type, type);
             strcpy(symbolTable[symbolCount].name, name);
 
@@ -88,7 +100,8 @@
         }
     }
 
-    static void printSTable() {
+    static void printSTable()
+    {
         printf("\n\nSl No.\tType\t\t\tSymbol\t\tDeclaration Line\tLast Used Line\t\tScope\n\n");
         printf("========================================================================================================\n\n");
 		int i = 0;
@@ -99,30 +112,32 @@
         printf("\n\n");
     }
 
-    static void createNestedScope(char* function) {
+    static void createNestedScope(char* function)
+	{
         char* temp = (char*)malloc(30 * sizeof(char));
         strcpy(temp, strcat(" > ", function));
         strcpy(currentScope, strcat(currentScope, temp));
     }
 
-    void resetDepth() {
+    void resetDepth()
+    {
         while(top())
             pop();
 
         depth = 1;
     }
 
-    node* createOp(char* operation, int noOperands ,node* left ,node* middle ,node* right)
+    node* createOp(char* operation,int noOperands,node* left,node* middle,node* right)
     {
 
-        node* newNode = (node*)calloc(1, sizeof(node));
+        node* newNode = (node*)calloc(1,sizeof(node));
 
         newNode->left = left;
         newNode->middle = middle;
         newNode->right = right;
         newNode->noOperands = noOperands;
 
-        newNode->nodeType = (char*)malloc(sizeof(char) * ( strlen(operation) + 1 ));
+        newNode->nodeType = (char*)malloc( sizeof(char) * ( strlen(operation) + 1 ) );
         strcpy(newNode->nodeType,operation);
 
         return newNode;
@@ -161,10 +176,303 @@
             printf(" ) ");
         }
     }
+    void NumbertoString(int number, char * arr)
+    {
+        if(arr == NULL)
+        {
+            printf("some thing is wrong , allocate memory\n");
+        }
+        else
+        {
+            sprintf(arr, "%d", number);
+        }
+    }
+    char * makeStr(int number,int flag)
+    {
+        char *A=(char *)malloc(sizeof(char)*10);
+		NumbertoString(number,A);
+		
+		if(flag==1)
+		{
+				strcpy(tString, "T");
+				strcat(tString, A);
+				insertSymbol("ICGIdentifier", tString, -1,currentScope);
+				return tString;
+		}
+		else
+		{
+				strcpy(lString, "L");
+				strcat(lString, A);
+				insertSymbol("ICGLabel", lString, -1,currentScope);
+				return lString;
+		}
+		
 
+    }
+    void makeQ(char *result, char *op1, char *op2, char *operator)
+	{
+		
+		threeAddressQueue[qIndex].Result = (char*)malloc(strlen(result)+1);
+		threeAddressQueue[qIndex].operator = (char*)malloc(strlen(operator)+1);
+		threeAddressQueue[qIndex].op1 = (char*)malloc(strlen(op1)+1);
+		threeAddressQueue[qIndex].op2 = (char*)malloc(strlen(op2)+1);
+		strcpy(threeAddressQueue[qIndex].Result, result);
+		strcpy(threeAddressQueue[qIndex].op1, op1);
+		strcpy(threeAddressQueue[qIndex].op2, op2);
+		strcpy(threeAddressQueue[qIndex].operator,operator);
+		threeAddressQueue[qIndex].Index = qIndex;
+		qIndex++;
+	}
+    int isBinaryOperator(char * Op)
+    {
+            if((!strcmp(Op, "+")) || (!strcmp(Op, "*")) || (!strcmp(Op, "/")) || (!strcmp(Op, ">=")) || (!strcmp(Op, "<=")) || (!strcmp(Op, "<")) || (!strcmp(Op, ">")) || 
+			 (!strcmp(Op, "in")) || (!strcmp(Op, "==")) || (!strcmp(Op, "and")) || (!strcmp(Op, "or")))
+			{
+				return 1;
+			}
+			
+			else 
+			{
+				return 0;
+			}
+    }
+    void generateThreeAddressCode(node * root)
+    {
+        if(root == NULL)
+		{
+			return;
+		}
+        else if(!strcmp(root->nodeType, "Identifier") )
+        {
+          
+				printf("T%d = %s\n", root->nodeNo, root->nodeType);
+				makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
+			    return;
+        }
+        else if((!strcmp(root->nodeType, "If")) || (!strcmp(root->nodeType, "Elif")))
+		{			
+			switch(root->noOperands)
+			{
+				case 2 : 
+				{
+					int temp = labelIndex;
+					generateThreeAddressCode(root->left);
+					printf("If False T%d goto L%d\n", root->left->nodeNo, labelIndex);
+					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");
+					labelIndex++;
+					generateThreeAddressCode(root->middle);
+					labelIndex--;
+					printf("L%d: ", temp);
+					makeQ(makeStr(temp, 0), "-", "-", "Label");
+					break;
+				}
+				case 3 : 
+				{
+					int temp = labelIndex;
+					generateThreeAddressCode(root->left);
+					printf("If False T%d goto L%d\n", root->left->nodeNo, labelIndex);
+					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");					
+					generateThreeAddressCode(root->middle);
+					printf("goto L%d\n", temp+1);
+					makeQ(makeStr(temp+1, 0), "-", "-", "goto");
+					printf("L%d: ", temp);
+					makeQ(makeStr(temp, 0), "-", "-", "Label");
+					generateThreeAddressCode(root->right);
+					printf("L%d: ", temp+1);
+					makeQ(makeStr(temp+1, 0), "-", "-", "Label");
+					labelIndex+=2;
+					break;
+				}
+			}
+			return;
+		}
+		else if(!strcmp(root->nodeType, "Else"))
+		{
+			generateThreeAddressCode(root->left);
+			return;
+		}
+		else if(!strcmp(root->nodeType, "While"))
+		{
+			int temp = labelIndex;
+			generateThreeAddressCode(root->left);
+			printf("L%d: If False T%d goto L%d\n", labelIndex, root->left->nodeNo, labelIndex+1);
+			makeQ(makeStr(temp, 0), "-", "-", "Label");		
+			makeQ(makeStr(temp+1, 0), makeStr(root->left->nodeNo, 1), "-", "If False");								
+			labelIndex+=2;			
+			generateThreeAddressCode(root->middle);
+			printf("goto L%d\n", temp);
+			makeQ(makeStr(temp, 0), "-", "-", "goto");
+			printf("L%d: ", temp+1);
+			makeQ(makeStr(temp+1, 0), "-", "-", "Label"); 
+			labelIndex = labelIndex+2;
+			return;
+		}
+        else if(!strcmp(root->nodeType, "Next"))
+		{
+			generateThreeAddressCode(root->left);
+			generateThreeAddressCode(root->middle);
+			return;
+		}
+	    else if(!strcmp(root->nodeType, "BeginBlock"))
+		{
+			generateThreeAddressCode(root->left);
+			generateThreeAddressCode(root->middle);		
+			return;	
+		}
+		else if(!strcmp(root->nodeType, "EndBlock"))
+		{
+			switch(root->noOperands)
+			{
+				case 0 : 
+				{
+					break;
+				}
+				case 1 : 
+				{
+					generateThreeAddressCode(root->left);
+					break;
+				}
+			}
+			return;
+		}
+	    else if(isBinaryOperator(root->nodeType)==1)
+		{
+			generateThreeAddressCode(root->left);
+			generateThreeAddressCode(root->right);
+			char *X1 = (char*)malloc(sizeof(char)*10);
+			char *X2 = (char*)malloc(sizeof(char)*10);
+			char *X3 = (char*)malloc(sizeof(char)*10);
+			
+			strcpy(X1, makeStr(root->nodeNo, 1));
+			strcpy(X2, makeStr(root->left->nodeNo, 1));
+			strcpy(X3, makeStr(root->middle->nodeNo, 1));
+			printf("T%d = T%d %s T%d\n", root->nodeNo, root->left->nodeNo, root->nodeType, root->middle->nodeNo);
+			makeQ(X1, X2, X3, root->nodeType);
+			free(X1);
+			free(X2);
+			free(X3);
+			return;
+		}
+		else if(!strcmp(root->nodeType, "-"))
+		{
+			if(root->noOperands == 1)
+			{
+				generateThreeAddressCode(root->left);
+				char *X1 = (char*)malloc(sizeof(char)* 10);
+				char *X2 = (char*)malloc(sizeof(char)* 10);
+				strcpy(X1, makeStr(root->nodeNo, 1));
+				strcpy(X2, makeStr(root->left->nodeNo,1));
+				printf("T%d = %s T%d\n", root->nodeNo, root->nodeType, root->left->nodeNo);
+				makeQ(X1, X2, "-", root->nodeType);	
+                free(X1);
+                free(X2);
+                return;
+			}
+			else
+			{
+				generateThreeAddressCode(root->left);
+				generateThreeAddressCode(root->middle);
+				char *X1 = (char*)malloc(sizeof(char)* 10);
+				char *X2 = (char*)malloc(sizeof(char)* 10);
+				char *X3 = (char*)malloc(sizeof(char)* 10);
+			
+				strcpy(X1, makeStr(root->nodeNo, 1));
+				strcpy(X2, makeStr(root->left->nodeNo, 1));
+				strcpy(X3, makeStr(root->middle->nodeNo, 1));
+
+				printf("T%d = T%d %s T%d\n", root->nodeNo, root->left->nodeNo, root->nodeType, root->middle->nodeNo);
+				makeQ(X1, X2, X3, root->nodeType);
+				free(X1);
+				free(X2);
+				free(X3);
+				return;
+			
+			}
+		}
+        else if(!strcmp(root->nodeType, "import"))
+		{
+			printf("import %s\n", root->left->nodeType);
+			makeQ("-", root->left->nodeType, "-", "import");
+			return;
+		}
+        else if(!strcmp(root->nodeType, "NewLine"))
+		{
+			generateThreeAddressCode(root->left);
+			generateThreeAddressCode(root->middle);
+			return;
+		}
+        else if(!strcmp(root->nodeType, "="))
+		{
+			generateThreeAddressCode(root->middle);
+			printf("%s = T%d\n", root->left->nodeType, root->middle->nodeNo);
+			makeQ(root->left->nodeType, makeStr(root->middle->nodeNo, 1), "-",root->nodeType);
+			return;
+		}
+        else if(!strcmp(root->nodeType, "Func_Name"))
+		{
+			printf("Begin Function %s\n", root->left->nodeType);
+			makeQ("-", root->left->nodeType, "-", "BeginF");
+			generateThreeAddressCode(root->right);
+			printf("End Function %s\n", root->left->nodeType);
+			makeQ("-", root->left->nodeType, "-", "EndF");
+			return;
+		}
+		else if(!strcmp(root->nodeType, "Func_Call"))
+		{
+			if(!strcmp(root->middle->nodeType, "Void"))
+			{
+				printf("(T%d)Call Function %s\n", root->nodeNo, root->left->nodeType);
+				makeQ(makeStr(root->nodeNo, 1), root->left->nodeType, "-", "Call");
+			}
+			else
+			{
+				char * A = (char *)malloc(sizeof(char)* 10);
+				char* token = strtok(root->middle->nodeType, ","); 
+  			    int i = 0;
+				while (token != NULL) 
+				{
+					i++; 
+				    printf("Push Param %s\n", token);
+				    makeQ("-", token, "-", "Param"); 
+				    token = strtok(NULL, ","); 
+				}
+				
+				printf("(T%d)Call Function %s, %d\n", root->nodeNo, root->left->nodeType, i);
+				sprintf(A, "%d", i);
+				makeQ(makeStr(root->nodeNo, 1), root->left->nodeType, A, "Call");
+				printf("Pop Params for Function %s, %d\n", root->left->nodeType, i);				
+				return;
+			}
+		}
+        else if(root->noOperands == 0)
+		{
+			if(!strcmp(root->nodeType, "break"))
+			{
+				printf("goto L%d\n", labelIndex);
+				makeQ(makeStr(labelIndex, 0), "-", "-", "goto");
+			}
+
+			else if(!strcmp(root->nodeType, "pass"))
+			{
+				makeQ("-", "-", "-", "pass");
+			}
+
+			else if(!strcmp(root->nodeType, "return"))
+			{
+				printf("return\n");
+				makeQ("-", "-", "-", "return");
+			}
+			else 
+			{
+            	printf("T%d = %s\n", root->nodeNo, root->nodeType);
+				makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
+			}
+            return ; 
+		}
+    }
 %}
-
-%union { 
+%union 
+{ 
 	char* text;
 	char* num;
 	char* str;
@@ -188,82 +496,76 @@
 %type <NODE> startparse start constant term expressions
 %type <NODE> arith_expr bool_expr bool_term bool_factor import_stmt
 %type <NODE> pass_stmt break_stmt assign_stmt if_stmt elif_stmts
-%type <NODE> else_stmt while_stmt args call_params func_def func_call 
+%type <NODE> else_stmt while_stmt args call_params func_def func_call return_stmt 
 %type <NODE> basic_stmt cmpd_stmt statements start_suite suite end_suite
 
 %%
 
 startparse: {init();} start  ENDFILE   {
-                                if (isError == 0){
-                                    // No errors
-
-                                    printf(GREEN "\nValid Python Syntax\n" RESET); 
-                                    printSTable();
-                                    displayAST($2);
-                                    printf("\n");
-                                }
-                                else {
-                                    printf(RED "\nInvalid Python Syntax\n" RESET); 
-                                    displayAST($2);
-                                    printf("\n");
-                                }
+                                printf("\nValid Python Syntax\n"); 
+                                printSTable();
+                                displayAST($2);
+                                printf("\nThe Intermediate code\n");
+                                generateThreeAddressCode($2);
                                 exit(0);
                             } ;
-start: NEWLINE start {$$ = $2;} 
+start: NEWLINE start {$$=$2;} 
     | statements NEWLINE start {$$ = createOp("NewLine", 2, $1, $3,NULL); };
-    | statements NEWLINE {$$ = $1;};
+    | statements NEWLINE {$$=$1;};
 
-constant: NUMBER {$$ = createOp($<text>1, 0, NULL, NULL, NULL);} 
-        | STRING {$$ = createOp($<text>1, 0, NULL, NULL, NULL);};
-term: ID {$$ = createOp($<text>1, 0, NULL, NULL, NULL);}
+constant: NUMBER {$$ = createOp($<text>1,0,NULL,NULL,NULL); } 
+        | STRING {$$ = createOp($<text>1,0,NULL,NULL,NULL); };
+term: ID {$$ = createOp($<text>1,0,NULL,NULL,NULL); }
     | constant {$$ = $1;} ;
-expressions: arith_expr {$$ = $1;} | bool_expr {$$ = $1;};
-arith_expr: term {$$ = $1;} 
-            | arith_expr PL arith_expr {$$ = createOp("+", 2, $1, $3, NULL);}
-			| arith_expr MN arith_expr {$$ = createOp("-", 2, $1, $3, NULL);}
-			| arith_expr ML arith_expr {$$ = createOp("*", 2, $1, $3, NULL);}
-			| arith_expr DV arith_expr {$$ = createOp("/", 2, $1, $3, NULL);}
-            | MN arith_expr {$$ = createOp("-", 1, $2, NULL, NULL);}
+expressions: arith_expr {$$=$1;}| bool_expr {$$=$1;};
+arith_expr: term {$$=$1;} 
+            | arith_expr PL arith_expr {$$ = createOp("+", 2, $1, $3,NULL);}
+			| arith_expr MN arith_expr {$$ = createOp("-", 2, $1, $3,NULL);}
+			| arith_expr ML arith_expr {$$ = createOp("*", 2, $1, $3,NULL);}
+			| arith_expr DV arith_expr {$$ = createOp("/", 2, $1, $3,NULL);}
+            | MN arith_expr {$$ = createOp("-", 1, $2,NULL,NULL);}
             | OP arith_expr CP {$$ = $2;};
-bool_term: TRUE {$$ = createOp("True", 0, NULL, NULL, NULL); }
-          | FALSE {$$ = createOp("False", 0, NULL, NULL, NULL); }
-          | arith_expr EE arith_expr {$$ = createOp("==", 2, $1, $3, NULL);}
+bool_term: TRUE {$$ = createOp("True",0,NULL,NULL,NULL); }
+          | FALSE {$$ = createOp("False",0,NULL,NULL,NULL); }
+          | arith_expr EE arith_expr {$$ = createOp("==", 2, $1, $3,NULL);}
           | bool_factor {$$ = $1;};
-bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2, NULL, NULL);}
+bool_factor: NOT bool_factor {$$ = createOp("!", 1, $2,NULL,NULL);}
           | OP bool_expr CP {$$ = $2;};  
-bool_expr: arith_expr GT arith_expr {$$ = createOp(">", 2, $1, $3, NULL);}
-          | arith_expr LT arith_expr {$$ = createOp("<", 2, $1, $3, NULL);}
-          | arith_expr GE arith_expr {$$ = createOp(">=", 2, $1, $3, NULL);}
-          | arith_expr LE arith_expr {$$ = createOp("<=", 2, $1, $3, NULL);}
-		  | bool_term AND bool_term {$$ = createOp("AND", 2, $1, $3, NULL);}
-		  | bool_term OR bool_term {$$ = createOp("or", 2, $1, $3, NULL);}
-		  | bool_term {$$ = $1;};
+bool_expr: arith_expr GT arith_expr {$$ = createOp(">", 2, $1, $3,NULL);}
+          | arith_expr LT arith_expr {$$ = createOp("<", 2, $1, $3,NULL);}
+          | arith_expr GE arith_expr {$$ = createOp(">=", 2, $1, $3,NULL);}
+          | arith_expr LE arith_expr {$$ = createOp("<=", 2, $1, $3,NULL);}
+		  | bool_term AND bool_term {$$ = createOp("AND", 2, $1, $3,NULL);}
+		  | bool_term OR bool_term {$$ = createOp("or", 2, $1, $3,NULL);}
+		  | bool_term {$$=$1;};
 
-import_stmt: IMPORT ID {$$ = createOp("import", 1, createOp("PackageName", $<text>2, NULL, NULL, NULL), NULL, NULL);};
-pass_stmt: PASS {$$ = createOp("pass", 0, NULL, NULL, NULL);};
-break_stmt: BREAK {$$ = createOp("break", 0, NULL, NULL, NULL);};
+import_stmt: IMPORT ID {$$ = createOp("import", 1, createOp($<text>2,0, NULL, NULL, NULL), NULL, NULL);};   
+pass_stmt: PASS {$$ = createOp("pass", 0,NULL,NULL,NULL);};
+break_stmt: BREAK {$$ = createOp("break", 0,NULL,NULL,NULL);};
+return_stmt : RETURN {$$ = createOp("return", 0,NULL,NULL,NULL);};
+
 assign_stmt: ID EQL expressions {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
+                                    $$ = createOp("=", 2, createOp($<text>1, 0,NULL,NULL,NULL), $3,NULL);
                                 }
             | ID EQL func_call  {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
-                                };
+                                    $$ = createOp("=", 2, createOp($<text>1, 0,NULL,NULL,NULL), $3,NULL);
+                                }; 
 
-if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL {$$ = createOp("If", 2, $2, $4, NULL);}
+if_stmt: IF bool_expr COLON start_suite %prec LOWER_THAN_EL {$$ = createOp("If", 2, $2, $4,NULL);}
        | IF bool_expr COLON start_suite elif_stmts {$$ = createOp("If", 3, $2, $4, $5);};
 elif_stmts: ELIF bool_expr COLON start_suite elif_stmts {$$= createOp("Elif", 3, $2, $4, $5);}
-          | else_stmt {$$ = $1;};
-else_stmt: ELSE COLON start_suite {$$ = createOp("Else", 1, $3, NULL, NULL);};
+          | else_stmt {$$= $1;};
+else_stmt: ELSE COLON start_suite {$$ = createOp("Else", 1, $3,NULL,NULL);};
 
-while_stmt: WHILE bool_expr COLON start_suite {$$ = createOp("While", 2, $2, $4, NULL);};
+while_stmt: WHILE bool_expr COLON start_suite {$$ = createOp("While", 2, $2, $4,NULL);};
 
 args_list: COMMA ID args_list | ;
-args: ID args_list {$$ = createOp("TO DO", 0, NULL, NULL, NULL);} 
-    | {$$ = createOp("Void", 0, NULL, NULL, NULL);};
+args: ID args_list {$$ = createOp("TO DO", 0,NULL,NULL,NULL);} 
+    | {$$ = createOp("Void", 0,NULL,NULL,NULL);};
 call_list: COMMA term call_list | ;
-call_params: term call_list {$$ = createOp("TO DO", 0, NULL, NULL, NULL);};
+call_params: term call_list {$$ = createOp("TO DO", 0,NULL,NULL,NULL);};
 
 func_def: DEF ID OP args CP COLON {
                                     insertSymbol("Function", $<text>2, yylineno, currentScope);
@@ -271,45 +573,43 @@ func_def: DEF ID OP args CP COLON {
                                   } 
           start_suite {
                         strcpy(currentScope, "Global");
-                        $$ = createOp("Func_Name", 3, createOp($<text>2, 0, NULL, NULL, NULL), $4, $8);  
+                        $$ = createOp("Func_Name", 3, createOp($<text>2,0,NULL,NULL,NULL), $4, $8);  
                       };
 func_call: ID OP call_params CP {
                                     insertSymbol("Function", $<text>2, yylineno, currentScope);
-                                    $$ = createOp("Func_Call", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
+                                    $$ = createOp("Func_Call", 2, createOp($<text>1,0,NULL,NULL,NULL), $3,NULL);
                                 } ;
 
-basic_stmt: import_stmt {$$ = $1;}
-            | pass_stmt {$$ = $1;}
-            | break_stmt {$$ = $1;}
-            | assign_stmt {$$ = $1;}
-            | expressions {$$ = $1;};
+basic_stmt: import_stmt {$$=$1;}
+            | pass_stmt {$$=$1;}
+            | break_stmt {$$=$1;}
+            | assign_stmt {$$=$1;}
+            | expressions {$$=$1;}
+            | return_stmt {$$=$1;};
+
+
 cmpd_stmt: if_stmt {$$ = $1;}
         | while_stmt {$$ = $1;};
 
 statements: basic_stmt {$$ = $1;}
         | cmpd_stmt {$$ = $1;}
         | func_def {$$ = $1;}
-        | func_call {$$ = $1;}
-        | error NEWLINE {
-                            yyclearin;
-                            isError = 1;
-                            $$ = createOp("SyntaxError", 0, NULL, NULL, NULL);
-                        };
+        | func_call {$$ = $1;};
 
 start_suite: basic_stmt {$$ = $1;} 
-            | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4, NULL);};
+            | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4,NULL);};
 
-suite: NEWLINE NOCHANGE statements suite {$$ = createOp("Next", 2, $3, $4, NULL);}
+suite: NEWLINE NOCHANGE statements suite {$$ = createOp("Next", 2, $3, $4,NULL);}
         | NEWLINE end_suite {$$ = $2;};
 
-end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL, NULL, NULL);}
-           | DEDENT statements {$$ = createOp("EndBlock", 1, $2, NULL, NULL);}
-           | {$$ = createOp("EndBlock", 0, NULL, NULL, NULL); resetDepth();};
+end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL,NULL,NULL);}
+           | DEDENT statements {$$ = createOp("EndBlock", 1, $2,NULL,NULL);}
+           | {$$ = createOp("EndBlock", 0, NULL,NULL,NULL); resetDepth();};
 
 %%
 
-int yyerror(const char* text) {
-	printf(RED "Syntax Error at Line %d\n   " RESET, yylineno);
+int  yyerror(const char* text) {
+	printf("Syntax Error at Line %d\n", yylineno);
 }
 
 int main() {
