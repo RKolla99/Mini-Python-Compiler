@@ -8,7 +8,6 @@ while True:
 		x = 0
 	else:
 		x = 1
-	
 	break
 
 def fun(a, b):

@@ -4,8 +4,14 @@
     #include <stdlib.h>
     #include <stdarg.h>
 
+	#define RESET   "\033[0m"
+    #define RED     "\033[31m"
+    #define GREEN   "\033[32m"
+
+
 	extern int yylineno;
     extern int depth;
+	extern int isError;
     extern int top();
     extern int pop();
 
@@ -501,13 +507,26 @@
 
 %%
 
+
+
+
+
 startparse: {init();} start  ENDFILE   {
-                                printf("\nValid Python Syntax\n"); 
-                                printSTable();
-                                displayAST($2);
-                                printf("\nThe Intermediate code\n");
-                                generateThreeAddressCode($2);
-                                exit(0);
+                                if (isError == 0)				{
+                                     // No errors
+                                     printf(GREEN "\nValid Python Syntax\n" RESET); 
+                                     printSTable();
+                                     displayAST($2);
+                                     printf("\n");
+									 printf("\nThe Intermediate code\n");
+                                	 generateThreeAddressCode($2);
+                                 }
+                                 else {
+                                     printf(RED "\nInvalid Python Syntax\n" RESET); 
+                                     displayAST($2);
+                                     printf("\n");
+                                 }
+								 exit(0);
                             } ;
 start: NEWLINE start {$$=$2;} 
     | statements NEWLINE start {$$ = createOp("NewLine", 2, $1, $3,NULL); };
@@ -594,7 +613,12 @@ cmpd_stmt: if_stmt {$$ = $1;}
 statements: basic_stmt {$$ = $1;}
         | cmpd_stmt {$$ = $1;}
         | func_def {$$ = $1;}
-        | func_call {$$ = $1;};
+        | func_call {$$ = $1;}
+		| error NEWLINE {
+                             yyclearin;
+                             isError = 1;
+                             $$ = createOp("SyntaxError", 0, NULL, NULL, NULL);
+                         };
 
 start_suite: basic_stmt {$$ = $1;} 
             | NEWLINE INDENT statements suite {$$ = createOp("BeginBlock", 2, $3, $4,NULL);};
@@ -609,7 +633,7 @@ end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL,NULL,NULL);}
 %%
 
 int  yyerror(const char* text) {
-	printf("Syntax Error at Line %d\n", yylineno);
+	printf(RED "Syntax Error at Line %d\n   " RESET, yylineno);
 }
 
 int main() {

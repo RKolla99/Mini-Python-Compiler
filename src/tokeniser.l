@@ -135,8 +135,8 @@ trip_squote '''
 <<EOF>> {print_token("ENDFILE\n"); return ENDFILE;}
 
 .   {
-        isError = 1;
-        yyerror();
+         isError = 1;
+         yyerror();
         // handle_error(yylineno);
     }
 
