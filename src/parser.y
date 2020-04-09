@@ -42,6 +42,8 @@
         char * op2;
         char * operator;
         int Index;
+
+		int loopFlag;
     } Quad;
 
     static symbol symbolTable[500];
@@ -52,6 +54,8 @@
     static int qIndex=0;
 	static int nodeCount = 0;
     static Quad* threeAddressQueue = NULL;
+	static Quad* optimisedThreeAddressQueue = NULL;
+	static Quad* tempQueue = NULL;
     static char* currentScope;
 	static char* tString = NULL, *lString = NULL;
 	
@@ -215,13 +219,10 @@
 				insertSymbol("ICGLabel", lString, -1,currentScope);
 				return lString;
 		}
-		
-
     }
 
-    void makeQ(char *result, char *op1, char *op2, char *operator)
+	void makeWhileQ(char *result, char *op1, char *op2, char *operator, int loopFlag)
 	{
-		
 		threeAddressQueue[qIndex].Result = (char*)malloc(strlen(result)+1);
 		threeAddressQueue[qIndex].operator = (char*)malloc(strlen(operator)+1);
 		threeAddressQueue[qIndex].op1 = (char*)malloc(strlen(op1)+1);
@@ -231,6 +232,22 @@
 		strcpy(threeAddressQueue[qIndex].op2, op2);
 		strcpy(threeAddressQueue[qIndex].operator,operator);
 		threeAddressQueue[qIndex].Index = qIndex;
+		threeAddressQueue[qIndex].loopFlag = loopFlag;
+		qIndex++;
+	}
+
+    void makeQ(char *result, char *op1, char *op2, char *operator)
+	{
+		threeAddressQueue[qIndex].Result = (char*)malloc(strlen(result)+1);
+		threeAddressQueue[qIndex].operator = (char*)malloc(strlen(operator)+1);
+		threeAddressQueue[qIndex].op1 = (char*)malloc(strlen(op1)+1);
+		threeAddressQueue[qIndex].op2 = (char*)malloc(strlen(op2)+1);
+		strcpy(threeAddressQueue[qIndex].Result, result);
+		strcpy(threeAddressQueue[qIndex].op1, op1);
+		strcpy(threeAddressQueue[qIndex].op2, op2);
+		strcpy(threeAddressQueue[qIndex].operator,operator);
+		threeAddressQueue[qIndex].Index = qIndex;
+		threeAddressQueue[qIndex].loopFlag = -1;
 		qIndex++;
 	}
 
@@ -295,10 +312,10 @@
 			int temp = labelIndex;
 			generateThreeAddressCode(root->left);
 			makeQ(makeStr(temp, 0), "-", "-", "Label");		
-			makeQ(makeStr(temp+1, 0), makeStr(root->left->nodeNo, 1), "-", "If False");								
+			makeWhileQ(makeStr(temp+1, 0), makeStr(root->left->nodeNo, 1), "-", "If False", 0);								
 			labelIndex+=2;			
 			generateThreeAddressCode(root->middle);
-			makeQ(makeStr(temp, 0), "-", "-", "goto");
+			makeWhileQ(makeStr(temp, 0), "-", "-", "goto", 1);
 			makeQ(makeStr(temp+1, 0), "-", "-", "Label"); 
 			labelIndex = labelIndex+2;
 			return;
@@ -547,7 +564,8 @@
                     !(strcmp(threeAddressQueue[i].operator,"goto") == 0)  &&
                     !(strcmp(threeAddressQueue[i].operator,"If False") == 0) &&
                     !(strcmp(threeAddressQueue[i].operator,"Call") == 0) &&
-                    !(strcmp(threeAddressQueue[i].Result,"-") == 0)
+                    !(strcmp(threeAddressQueue[i].Result,"-") == 0) &&
+					threeAddressQueue[i].Index != -2
                 )
                 {
                     int required = 0;
@@ -563,14 +581,59 @@
 
                     if(!required && threeAddressQueue[i].Index != -1)
                     {
+						threeAddressQueue[i - 1].Index = -1;
                         threeAddressQueue[i].Index = -1;
                         deadCodeExists = 1;
                     }
                 }     
             }
         }
-
     }
+
+	void loopUnroll()
+	{
+		optimisedThreeAddressQueue = (Quad*)malloc(qIndex * 2 * sizeof(Quad));
+
+		int i = 0, qIndexOpt = 0, tempQIndex = 0, isRepeat = 0;
+		
+		while(i < qIndex)
+		{
+			if(threeAddressQueue[i].loopFlag == 0 && isRepeat == 0)
+			{
+				isRepeat = 1;
+				tempQueue = (Quad*)malloc(qIndex * sizeof(Quad));
+				optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
+			}
+			else if(threeAddressQueue[i].loopFlag == 1)
+			{
+				isRepeat = 0;
+				for(int j = 0; j < tempQIndex; j++)
+				{
+					optimisedThreeAddressQueue[qIndexOpt++] = tempQueue[j];
+				}
+				free(tempQueue);
+				tempQueue = NULL;
+				optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
+			}
+			else
+			{
+				if(isRepeat > 0)
+				{
+					threeAddressQueue[i].Index = -2;
+					optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
+					tempQueue[tempQIndex++] = threeAddressQueue[i];
+					i++;
+					continue;
+				}
+				optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
+			}
+			i++;
+		}
+
+		threeAddressQueue = optimisedThreeAddressQueue;
+		qIndex = qIndexOpt;
+		free(optimisedThreeAddressQueue);
+	}
 
 %}
 
@@ -607,16 +670,16 @@
 startparse: {init();} start  ENDFILE   {
                                 if (isError == 0) {
 									// No errors
-									printf(GREEN "\nValid Python Syntax\n" RESET); 
 									printSTable();
 									displayAST($2);
 									printf("\n\n\n====Intermediate code====\n\n");
 									generateThreeAddressCode($2);
-                                    printICG();
+									printICG();
 									printf("\n\n\n====Optimised intermediate code====\n\n");
+									loopUnroll();
                                     deadCodeElimination();
 									printICG();
-									printf("\n THANK YOU \n");
+									printf(GREEN "\nValid Python Syntax\n\n" RESET); 
                                  }
                                  else {
 									printf(RED "\nInvalid Python Syntax\n" RESET); 
