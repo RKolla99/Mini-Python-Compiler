@@ -457,77 +457,80 @@
 		int i = 0;
 		while(i < qIndex)
 		{
-			if(!strcmp(threeAddressQueue[i].operator, "="))
-			{
-				printf("%s = %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "If False"))
-			{
-				printf("If False %s goto %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].Result);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "Label"))
-			{
-				printf("%s: ", threeAddressQueue[i].Result);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "goto"))
-			{
-				printf("goto %s\n", threeAddressQueue[i].Result);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "-"))
-			{
-				if(!strcmp(threeAddressQueue[i].op2, "-"))
-				{
-					printf("%s = %s %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].operator, threeAddressQueue[i].op1);
-				}
-				else
-				{
-					printf("%s = %s %s %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].operator, threeAddressQueue[i].op2);
-				}
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "import"))
-			{
-				printf("import %s\n", threeAddressQueue[i].op1);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "="))
-			{
-				printf("%s = %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "BeginF"))
-			{
-				printf("Begin Function %s\n", threeAddressQueue[i].op1);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator,"EndF"))
-			{
-				printf("End Function %s\n", threeAddressQueue[i].op1);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "Call"))
-			{
-				if(!strcmp(threeAddressQueue[i].op2, "-"))
-				{
-					printf("(%s)Call Function %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
-				}
-				else
-				{
-					printf("(%s)Call Function %s, %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].op2);
-					printf("Pop Params for Function %s, %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].op2);
-				}
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "Param"))
-			{
-				printf("Push Param %s\n", threeAddressQueue[i].op1);
-			}
-			else if(!strcmp(threeAddressQueue[i].operator, "return"))
-			{
-				printf("return\n");
-			}
-			else if(isBinaryOperator(threeAddressQueue[i].operator) == 1)
-			{
-				printf("%s = %s %s %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].operator,threeAddressQueue[i].op2);
-			}
-			else
-			{
-				printf("Something went wrong check pls\n");			
-			}
+			if(threeAddressQueue[i].Index != -1)
+            {
+                if(!strcmp(threeAddressQueue[i].operator, "="))
+                {
+                    printf("%s = %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "If False"))
+                {
+                    printf("If False %s goto %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].Result);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "Label"))
+                {
+                    printf("%s: ", threeAddressQueue[i].Result);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "goto"))
+                {
+                    printf("goto %s\n", threeAddressQueue[i].Result);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "-"))
+                {
+                    if(!strcmp(threeAddressQueue[i].op2, "-"))
+                    {
+                        printf("%s = %s %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].operator, threeAddressQueue[i].op1);
+                    }
+                    else
+                    {
+                        printf("%s = %s %s %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].operator, threeAddressQueue[i].op2);
+                    }
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "import"))
+                {
+                    printf("import %s\n", threeAddressQueue[i].op1);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "="))
+                {
+                    printf("%s = %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "BeginF"))
+                {
+                    printf("Begin Function %s\n", threeAddressQueue[i].op1);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator,"EndF"))
+                {
+                    printf("End Function %s\n", threeAddressQueue[i].op1);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "Call"))
+                {
+                    if(!strcmp(threeAddressQueue[i].op2, "-"))
+                    {
+                        printf("(%s)Call Function %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
+                    }
+                    else
+                    {
+                        printf("(%s)Call Function %s, %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].op2);
+                        printf("Pop Params for Function %s, %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].op2);
+                    }
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "Param"))
+                {
+                    printf("Push Param %s\n", threeAddressQueue[i].op1);
+                }
+                else if(!strcmp(threeAddressQueue[i].operator, "return"))
+                {
+                    printf("return\n");
+                }
+                else if(isBinaryOperator(threeAddressQueue[i].operator) == 1)
+                {
+                    printf("%s = %s %s %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].operator,threeAddressQueue[i].op2);
+                }
+                else
+                {
+                    printf("Something went wrong check pls\n");			
+                }
+            }
 			i = i + 1;
 		}
 	}
@@ -540,18 +543,18 @@
             deadCodeExists = 0;
             for(int i=0;i<qIndex;i++)
             {
-                if( !strcmp(threeAddressQueue[i].operator,"Label") ||
-                    !strcmp(threeAddressQueue[i].operator,"goto")  ||
-                    !strcmp(threeAddressQueue[i].operator,"If False") ||
-                    !strcmp(threeAddressQueue[i].operator,"Call") ||
-                    !strcmp(threeAddressQueue[i].Result,"-")
+                if( !(strcmp(threeAddressQueue[i].operator,"Label") == 0) &&
+                    !(strcmp(threeAddressQueue[i].operator,"goto") == 0)  &&
+                    !(strcmp(threeAddressQueue[i].operator,"If False") == 0) &&
+                    !(strcmp(threeAddressQueue[i].operator,"Call") == 0) &&
+                    !(strcmp(threeAddressQueue[i].Result,"-") == 0)
                 )
                 {
                     int required = 0;
                     for(int j=i+1;j<qIndex;j++)
                     {
-                        if( strcmp(threeAddressQueue[j].op1,threeAddressQueue[i].Result) ||
-                            strcmp(threeAddressQueue[j].op2,threeAddressQueue[i].Result)  )
+                        if( ( (strcmp(threeAddressQueue[j].op1,threeAddressQueue[i].Result) == 0) && threeAddressQueue[i].Index != -1) ||
+                            ( (strcmp(threeAddressQueue[j].op2,threeAddressQueue[i].Result) == 0) && threeAddressQueue[i].Index != -1)  )
                             {
                                 required = 1;
                                 break;
@@ -609,6 +612,8 @@ startparse: {init();} start  ENDFILE   {
 									displayAST($2);
 									printf("\n\n\n====Intermediate code====\n\n");
 									generateThreeAddressCode($2);
+                                    printICG();
+									printf("\n\n\n====Optimised intermediate code====\n\n");
                                     deadCodeElimination();
 									printICG();
 									printf("\n THANK YOU \n");
