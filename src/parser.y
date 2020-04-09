@@ -52,9 +52,11 @@
     static int symbolCount = -1;
     static int labelIndex=0;
     static int qIndex=0;
+    static int oldQIndex = 0;
 	static int nodeCount = 0;
     static Quad* threeAddressQueue = NULL;
 	static Quad* optimisedThreeAddressQueue = NULL;
+    static Quad* copyFreeThreeAddressQueue = NULL;
 	static Quad* tempQueue = NULL;
     static char* currentScope;
 	static char* tString = NULL, *lString = NULL;
@@ -613,6 +615,7 @@
 				}
 				free(tempQueue);
 				tempQueue = NULL;
+                tempQIndex = 0;
 				optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
 			}
 			else
@@ -630,15 +633,50 @@
 					i++;
 					continue;
 				}
-				optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
+                optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
 			}
 			i++;
 		}
 
+        copyFreeThreeAddressQueue = threeAddressQueue;
 		threeAddressQueue = optimisedThreeAddressQueue;
+        oldQIndex = qIndex; 
 		qIndex = qIndexOpt;
-		free(optimisedThreeAddressQueue);
 	}
+
+    void deallocateMemory()
+    {
+        free(currentScope);
+        free(tString);
+        free(lString);
+
+        for(int i=0;i < qIndex;i++)
+        {
+            if(i < oldQIndex)
+            {
+                free(copyFreeThreeAddressQueue[i].Result);
+		        free(copyFreeThreeAddressQueue[i].operator);
+		        free(copyFreeThreeAddressQueue[i].op1);
+		        free(copyFreeThreeAddressQueue[i].op2);
+            }
+            
+            free(threeAddressQueue[i].Result);
+		    free(threeAddressQueue[i].operator);
+		    free(threeAddressQueue[i].op1);
+		    free(threeAddressQueue[i].op2);
+
+        }
+
+		for(int i = 0; i <= symbolCount; i++)
+		{
+            free(symbolTable[symbolCount].type);
+            free(symbolTable[symbolCount].name);
+            free(symbolTable[symbolCount].scope);
+		}
+
+        free(copyFreeThreeAddressQueue);
+        free(threeAddressQueue);
+    }
 
 %}
 
@@ -684,6 +722,7 @@ startparse: {init();} start  ENDFILE   {
 									loopUnroll();
                                     deadCodeElimination();
 									printICG();
+                                    deallocateMemory();
 									printf(GREEN "\n\nValid Python Syntax\n\n" RESET); 
                                  }
                                  else {
