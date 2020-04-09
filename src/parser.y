@@ -263,7 +263,6 @@
 		}
         else if(!strcmp(root->nodeType, "Identifier") )
         {
-			printf("T%d = %s\n", root->nodeNo, root->nodeType);
 			makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
 			return;
         }
@@ -275,12 +274,10 @@
 				{
 					int temp = labelIndex;
 					generateThreeAddressCode(root->left);
-					printf("If False T%d goto L%d\n", root->left->nodeNo, labelIndex);
 					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");
 					labelIndex++;
 					generateThreeAddressCode(root->middle);
 					labelIndex--;
-					printf("L%d: ", temp);
 					makeQ(makeStr(temp, 0), "-", "-", "Label");
 					break;
 				}
@@ -288,15 +285,11 @@
 				{
 					int temp = labelIndex;
 					generateThreeAddressCode(root->left);
-					printf("If False T%d goto L%d\n", root->left->nodeNo, labelIndex);
 					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");					
 					generateThreeAddressCode(root->middle);
-					printf("goto L%d\n", temp+1);
 					makeQ(makeStr(temp+1, 0), "-", "-", "goto");
-					printf("L%d: ", temp);
 					makeQ(makeStr(temp, 0), "-", "-", "Label");
 					generateThreeAddressCode(root->right);
-					printf("L%d: ", temp+1);
 					makeQ(makeStr(temp+1, 0), "-", "-", "Label");
 					labelIndex+=2;
 					break;
@@ -313,14 +306,11 @@
 		{
 			int temp = labelIndex;
 			generateThreeAddressCode(root->left);
-			printf("L%d: If False T%d goto L%d\n", labelIndex, root->left->nodeNo, labelIndex+1);
 			makeQ(makeStr(temp, 0), "-", "-", "Label");		
 			makeQ(makeStr(temp+1, 0), makeStr(root->left->nodeNo, 1), "-", "If False");								
 			labelIndex+=2;			
 			generateThreeAddressCode(root->middle);
-			printf("goto L%d\n", temp);
 			makeQ(makeStr(temp, 0), "-", "-", "goto");
-			printf("L%d: ", temp+1);
 			makeQ(makeStr(temp+1, 0), "-", "-", "Label"); 
 			labelIndex = labelIndex+2;
 			return;
@@ -364,7 +354,6 @@
 			strcpy(X1, makeStr(root->nodeNo, 1));
 			strcpy(X2, makeStr(root->left->nodeNo, 1));
 			strcpy(X3, makeStr(root->middle->nodeNo, 1));
-			printf("T%d = T%d %s T%d\n", root->nodeNo, root->left->nodeNo, root->nodeType, root->middle->nodeNo);
 			makeQ(X1, X2, X3, root->nodeType);
 			free(X1);
 			free(X2);
@@ -380,7 +369,6 @@
 				char *X2 = (char*)malloc(sizeof(char)* 10);
 				strcpy(X1, makeStr(root->nodeNo, 1));
 				strcpy(X2, makeStr(root->left->nodeNo,1));
-				printf("T%d = %s T%d\n", root->nodeNo, root->nodeType, root->left->nodeNo);
 				makeQ(X1, X2, "-", root->nodeType);	
                 free(X1);
                 free(X2);
@@ -398,7 +386,6 @@
 				strcpy(X2, makeStr(root->left->nodeNo, 1));
 				strcpy(X3, makeStr(root->middle->nodeNo, 1));
 
-				printf("T%d = T%d %s T%d\n", root->nodeNo, root->left->nodeNo, root->nodeType, root->middle->nodeNo);
 				makeQ(X1, X2, X3, root->nodeType);
 				free(X1);
 				free(X2);
@@ -409,7 +396,6 @@
 		}
         else if(!strcmp(root->nodeType, "import"))
 		{
-			printf("import %s\n", root->left->nodeType);
 			makeQ("-", root->left->nodeType, "-", "import");
 			return;
 		}
@@ -422,16 +408,13 @@
         else if(!strcmp(root->nodeType, "="))
 		{
 			generateThreeAddressCode(root->middle);
-			printf("%s = T%d\n", root->left->nodeType, root->middle->nodeNo);
 			makeQ(root->left->nodeType, makeStr(root->middle->nodeNo, 1), "-",root->nodeType);
 			return;
 		}
         else if(!strcmp(root->nodeType, "Func_Name"))
 		{
-			printf("Begin Function %s\n", root->left->nodeType);
 			makeQ("-", root->left->nodeType, "-", "BeginF");
 			generateThreeAddressCode(root->right);
-			printf("End Function %s\n", root->left->nodeType);
 			makeQ("-", root->left->nodeType, "-", "EndF");
 			return;
 		}
@@ -439,7 +422,6 @@
 		{
 			if(!strcmp(root->middle->nodeType, "Void"))
 			{
-				printf("(T%d)Call Function %s\n", root->nodeNo, root->left->nodeType);
 				makeQ(makeStr(root->nodeNo, 1), root->left->nodeType, "-", "Call");
 			}
 			else
@@ -450,15 +432,11 @@
 				while (token != NULL) 
 				{
 					i++; 
-				    printf("Push Param %s\n", token);
 				    makeQ("-", token, "-", "Param"); 
 				    token = strtok(NULL, ","); 
 				}
-				
-				printf("(T%d)Call Function %s, %d\n", root->nodeNo, root->left->nodeType, i);
 				sprintf(A, "%d", i);
-				makeQ(makeStr(root->nodeNo, 1), root->left->nodeType, A, "Call");
-				printf("Pop Params for Function %s, %d\n", root->left->nodeType, i);				
+				makeQ(makeStr(root->nodeNo, 1), root->left->nodeType, A, "Call");				
 				return;
 			}
 		}
@@ -466,7 +444,6 @@
 		{
 			if(!strcmp(root->nodeType, "break"))
 			{
-				printf("goto L%d\n", labelIndex);
 				makeQ(makeStr(labelIndex, 0), "-", "-", "goto");
 			}
 
@@ -477,17 +454,94 @@
 
 			else if(!strcmp(root->nodeType, "return"))
 			{
-				printf("return\n");
 				makeQ("-", "-", "-", "return");
 			}
 			else 
 			{
-            	printf("T%d = %s\n", root->nodeNo, root->nodeType);
 				makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
 			}
             return ; 
 		}
     }
+	void printICG()
+	{
+		int i=0;
+		while(i<qIndex)
+		{
+			if(!strcmp(threeAddressQueue[i].operator,"="))
+			{
+				printf("%s = %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"If False"))
+			{
+				printf("If False %s goto %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].Result);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"Label"))
+			{
+				printf("%s: ",threeAddressQueue[i].Result);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"goto"))
+			{
+				printf("goto %s\n",threeAddressQueue[i].Result);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"-"))
+			{
+				if(!strcmp(threeAddressQueue[i].op2, "-"))
+				{
+					printf("%s = %s %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].operator,threeAddressQueue[i].op1);
+				}
+				else
+				{
+					printf("%s = %s %s %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].op1,threeAddressQueue[i].operator,threeAddressQueue[i].op2);
+				}
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"import"))
+			{
+				printf("import %s\n",threeAddressQueue[i].op1);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"="))
+			{
+				printf("%s = %s\n", threeAddressQueue[i].Result,threeAddressQueue[i].op1);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"BeginF"))
+			{
+				printf("Begin Function %s\n", threeAddressQueue[i].op1);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"BeginF"))
+			{
+				printf("End Function %s\n", threeAddressQueue[i].op1);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"Call"))
+			{
+				if(!strcmp(threeAddressQueue[i].op2,"-"))
+				{
+					printf("(%s)Call Function %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].op1);
+				}
+				else
+				{
+					printf("(%s)Call Function %s, %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1,threeAddressQueue[i].op2);
+					printf("Pop Params for Function %s, %s\n",threeAddressQueue[i].op1,threeAddressQueue[i].op2);
+				}
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"Param"))
+			{
+				printf("Push Param %s\n",threeAddressQueue[i].op1);
+			}
+			else if(!strcmp(threeAddressQueue[i].operator,"return"))
+			{
+				printf("return\n");
+			}
+			else if(isBinaryOperator(threeAddressQueue[i].operator)==1)
+			{
+				printf("%s = %s %s %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].op1,threeAddressQueue[i].operator,threeAddressQueue[i].op2);
+			}
+			else
+			{
+				printf("Something went wrong check pls\n");			
+			}
+			i=i+1;
+		}
+	}
 %}
 %union 
 { 
@@ -531,6 +585,8 @@ startparse: {init();} start  ENDFILE   {
 									displayAST($2);
 									printf("\n\n\n====Intermediate code====\n\n");
 									generateThreeAddressCode($2);
+									printICG();
+									printf("\n THANK YOU \n");
                                  }
                                  else {
 									printf(RED "\nInvalid Python Syntax\n" RESET); 
