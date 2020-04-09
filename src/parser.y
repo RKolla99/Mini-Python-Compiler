@@ -600,13 +600,13 @@
 		{
 			if(threeAddressQueue[i].loopFlag == 0 && isRepeat == 0)
 			{
-				isRepeat = 1;
+				isRepeat += 1;
 				tempQueue = (Quad*)malloc(qIndex * sizeof(Quad));
 				optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
 			}
-			else if(threeAddressQueue[i].loopFlag == 1)
+			else if(threeAddressQueue[i].loopFlag == 1 && isRepeat == 1)
 			{
-				isRepeat = 0;
+				isRepeat -= 1;
 				for(int j = 0; j < tempQIndex; j++)
 				{
 					optimisedThreeAddressQueue[qIndexOpt++] = tempQueue[j];
@@ -619,9 +619,14 @@
 			{
 				if(isRepeat > 0)
 				{
+					if(threeAddressQueue[i].loopFlag == 0)
+						isRepeat += 1;
+					if(threeAddressQueue[i].loopFlag == 1)
+						isRepeat -= 1;
 					threeAddressQueue[i].Index = -2;
 					optimisedThreeAddressQueue[qIndexOpt++] = threeAddressQueue[i];
 					tempQueue[tempQIndex++] = threeAddressQueue[i];
+					
 					i++;
 					continue;
 				}
@@ -679,7 +684,7 @@ startparse: {init();} start  ENDFILE   {
 									loopUnroll();
                                     deadCodeElimination();
 									printICG();
-									printf(GREEN "\nValid Python Syntax\n\n" RESET); 
+									printf(GREEN "\n\nValid Python Syntax\n\n" RESET); 
                                  }
                                  else {
 									printf(RED "\nInvalid Python Syntax\n" RESET); 
