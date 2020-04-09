@@ -42,7 +42,7 @@
         char * op2;
         char * operator;
         int Index;
-    }Quad;
+    } Quad;
 
     static symbol symbolTable[500];
 
@@ -51,9 +51,9 @@
     static int labelIndex=0;
     static int qIndex=0;
 	static int nodeCount = 0;
-    static Quad * threeAddressQueue = NULL;
+    static Quad* threeAddressQueue = NULL;
     static char* currentScope;
-	static char *tString = NULL, *lString = NULL;
+	static char* tString = NULL, *lString = NULL;
 	
     static void init() 
     {
@@ -118,13 +118,6 @@
 			printf("%d\t%s\t\t%s\t\t%d\t\t\t%d\t\t\t%s\n", i+1, symbolTable[i].type, symbolTable[i].name, symbolTable[i].decLine, symbolTable[i].lastLine, symbolTable[i].scope);
 		}
         printf("\n\n\n\n");
-    }
-
-    static void createNestedScope(char* function)
-	{
-        char* temp = (char*)malloc(30 * sizeof(char));
-        strcpy(temp, strcat(" > ", function));
-        strcpy(currentScope, strcat(currentScope, temp));
     }
 
     void resetDepth()
@@ -243,16 +236,16 @@
 
     int isBinaryOperator(char * Op)
     {
-            if((!strcmp(Op, "+")) || (!strcmp(Op, "*")) || (!strcmp(Op, "/")) || (!strcmp(Op, ">=")) || (!strcmp(Op, "<=")) || (!strcmp(Op, "<")) || (!strcmp(Op, ">")) || 
-			 (!strcmp(Op, "in")) || (!strcmp(Op, "==")) || (!strcmp(Op, "and")) || (!strcmp(Op, "or")))
-			{
-				return 1;
-			}
-			
-			else 
-			{
-				return 0;
-			}
+		if((!strcmp(Op, "+")) || (!strcmp(Op, "*")) || (!strcmp(Op, "/")) || (!strcmp(Op, ">=")) || (!strcmp(Op, "<=")) || (!strcmp(Op, "<")) || (!strcmp(Op, ">")) || 
+			(!strcmp(Op, "in")) || (!strcmp(Op, "==")) || (!strcmp(Op, "and")) || (!strcmp(Op, "or")))
+		{
+			return 1;
+		}
+		
+		else 
+		{
+			return 0;
+		}
     }
 
     void generateThreeAddressCode(node * root)
@@ -261,11 +254,6 @@
 		{
 			return;
 		}
-        else if(!strcmp(root->nodeType, "Identifier") )
-        {
-			makeQ(makeStr(root->nodeNo, 1), root->nodeType, "-", "=");
-			return;
-        }
         else if((!strcmp(root->nodeType, "If")) || (!strcmp(root->nodeType, "Elif")))
 		{			
 			switch(root->noOperands)
@@ -343,10 +331,10 @@
 			}
 			return;
 		}
-	    else if(isBinaryOperator(root->nodeType)==1)
+	    else if(isBinaryOperator(root->nodeType) == 1)
 		{
 			generateThreeAddressCode(root->left);
-			generateThreeAddressCode(root->right);
+			generateThreeAddressCode(root->middle);
 			char *X1 = (char*)malloc(sizeof(char)*10);
 			char *X2 = (char*)malloc(sizeof(char)*10);
 			char *X3 = (char*)malloc(sizeof(char)*10);
@@ -408,7 +396,7 @@
         else if(!strcmp(root->nodeType, "="))
 		{
 			generateThreeAddressCode(root->middle);
-			makeQ(root->left->nodeType, makeStr(root->middle->nodeNo, 1), "-",root->nodeType);
+			makeQ(root->left->nodeType, makeStr(root->middle->nodeNo, 1), "-", root->nodeType);
 			return;
 		}
         else if(!strcmp(root->nodeType, "Func_Name"))
@@ -463,47 +451,48 @@
             return ; 
 		}
     }
+
 	void printICG()
 	{
-		int i=0;
-		while(i<qIndex)
+		int i = 0;
+		while(i < qIndex)
 		{
-			if(!strcmp(threeAddressQueue[i].operator,"="))
+			if(!strcmp(threeAddressQueue[i].operator, "="))
 			{
-				printf("%s = %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1);
+				printf("%s = %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"If False"))
+			else if(!strcmp(threeAddressQueue[i].operator, "If False"))
 			{
 				printf("If False %s goto %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].Result);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"Label"))
+			else if(!strcmp(threeAddressQueue[i].operator, "Label"))
 			{
-				printf("%s: ",threeAddressQueue[i].Result);
+				printf("%s: ", threeAddressQueue[i].Result);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"goto"))
+			else if(!strcmp(threeAddressQueue[i].operator, "goto"))
 			{
-				printf("goto %s\n",threeAddressQueue[i].Result);
+				printf("goto %s\n", threeAddressQueue[i].Result);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"-"))
+			else if(!strcmp(threeAddressQueue[i].operator, "-"))
 			{
 				if(!strcmp(threeAddressQueue[i].op2, "-"))
 				{
-					printf("%s = %s %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].operator,threeAddressQueue[i].op1);
+					printf("%s = %s %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].operator, threeAddressQueue[i].op1);
 				}
 				else
 				{
-					printf("%s = %s %s %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].op1,threeAddressQueue[i].operator,threeAddressQueue[i].op2);
+					printf("%s = %s %s %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].operator, threeAddressQueue[i].op2);
 				}
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"import"))
+			else if(!strcmp(threeAddressQueue[i].operator, "import"))
 			{
-				printf("import %s\n",threeAddressQueue[i].op1);
+				printf("import %s\n", threeAddressQueue[i].op1);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"="))
+			else if(!strcmp(threeAddressQueue[i].operator, "="))
 			{
-				printf("%s = %s\n", threeAddressQueue[i].Result,threeAddressQueue[i].op1);
+				printf("%s = %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"BeginF"))
+			else if(!strcmp(threeAddressQueue[i].operator, "BeginF"))
 			{
 				printf("Begin Function %s\n", threeAddressQueue[i].op1);
 			}
@@ -511,38 +500,39 @@
 			{
 				printf("End Function %s\n", threeAddressQueue[i].op1);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"Call"))
+			else if(!strcmp(threeAddressQueue[i].operator, "Call"))
 			{
-				if(!strcmp(threeAddressQueue[i].op2,"-"))
+				if(!strcmp(threeAddressQueue[i].op2, "-"))
 				{
-					printf("(%s)Call Function %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].op1);
+					printf("(%s)Call Function %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1);
 				}
 				else
 				{
-					printf("(%s)Call Function %s, %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1,threeAddressQueue[i].op2);
-					printf("Pop Params for Function %s, %s\n",threeAddressQueue[i].op1,threeAddressQueue[i].op2);
+					printf("(%s)Call Function %s, %s\n", threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].op2);
+					printf("Pop Params for Function %s, %s\n", threeAddressQueue[i].op1, threeAddressQueue[i].op2);
 				}
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"Param"))
+			else if(!strcmp(threeAddressQueue[i].operator, "Param"))
 			{
-				printf("Push Param %s\n",threeAddressQueue[i].op1);
+				printf("Push Param %s\n", threeAddressQueue[i].op1);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"return"))
+			else if(!strcmp(threeAddressQueue[i].operator, "return"))
 			{
 				printf("return\n");
 			}
-			else if(isBinaryOperator(threeAddressQueue[i].operator)==1)
+			else if(isBinaryOperator(threeAddressQueue[i].operator) == 1)
 			{
-				printf("%s = %s %s %s\n",threeAddressQueue[i].Result,threeAddressQueue[i].op1,threeAddressQueue[i].operator,threeAddressQueue[i].op2);
+				printf("%s = %s %s %s\n",threeAddressQueue[i].Result, threeAddressQueue[i].op1, threeAddressQueue[i].operator,threeAddressQueue[i].op2);
 			}
 			else
 			{
 				printf("Something went wrong check pls\n");			
 			}
-			i=i+1;
+			i = i + 1;
 		}
 	}
 %}
+
 %union 
 { 
 	char* text;
@@ -572,10 +562,6 @@
 %type <NODE> basic_stmt cmpd_stmt statements start_suite suite end_suite
 
 %%
-
-
-
-
 
 startparse: {init();} start  ENDFILE   {
                                 if (isError == 0) {
@@ -632,7 +618,7 @@ return_stmt : RETURN {$$ = createOp("return", 0, NULL, NULL, NULL);};
 
 assign_stmt: ID EQL expressions {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
-                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3,NULL);
+                                    $$ = createOp("=", 2, createOp($<text>1, 0, NULL, NULL, NULL), $3, NULL);
                                 }
             | ID EQL func_call  {
                                     insertSymbol("Identifier", $<text>1, yylineno, currentScope);
