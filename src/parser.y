@@ -531,6 +531,44 @@
 			i = i + 1;
 		}
 	}
+
+    void deadCodeElimination()
+    {
+        int deadCodeExists = 1;
+        while(deadCodeExists)
+        {
+            deadCodeExists = 0;
+            for(int i=0;i<qIndex;i++)
+            {
+                if( !strcmp(threeAddressQueue[i].operator,"Label") ||
+                    !strcmp(threeAddressQueue[i].operator,"goto")  ||
+                    !strcmp(threeAddressQueue[i].operator,"If False") ||
+                    !strcmp(threeAddressQueue[i].operator,"Call") ||
+                    !strcmp(threeAddressQueue[i].Result,"-")
+                )
+                {
+                    int required = 0;
+                    for(int j=i+1;j<qIndex;j++)
+                    {
+                        if( strcmp(threeAddressQueue[j].op1,threeAddressQueue[i].Result) ||
+                            strcmp(threeAddressQueue[j].op2,threeAddressQueue[i].Result)  )
+                            {
+                                required = 1;
+                                break;
+                            }
+                    }
+
+                    if(!required && threeAddressQueue[i].Index != -1)
+                    {
+                        threeAddressQueue[i].Index = -1;
+                        deadCodeExists = 1;
+                    }
+                }     
+            }
+        }
+
+    }
+
 %}
 
 %union 
@@ -571,6 +609,7 @@ startparse: {init();} start  ENDFILE   {
 									displayAST($2);
 									printf("\n\n\n====Intermediate code====\n\n");
 									generateThreeAddressCode($2);
+                                    deadCodeElimination();
 									printICG();
 									printf("\n THANK YOU \n");
                                  }
