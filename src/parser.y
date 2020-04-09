@@ -507,7 +507,7 @@
 			{
 				printf("Begin Function %s\n", threeAddressQueue[i].op1);
 			}
-			else if(!strcmp(threeAddressQueue[i].operator,"BeginF"))
+			else if(!strcmp(threeAddressQueue[i].operator,"EndF"))
 			{
 				printf("End Function %s\n", threeAddressQueue[i].op1);
 			}
