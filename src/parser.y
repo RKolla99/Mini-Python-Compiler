@@ -46,6 +46,13 @@
 		int loopFlag;
     } Quad;
 
+    typedef struct Error
+    {
+        int type;
+        char* msg;
+        int lineNo;
+    } Error;
+
     static symbol symbolTable[500];
 
 	static int startFlag = 0;
@@ -54,13 +61,15 @@
     static int qIndex=0;
     static int oldQIndex = 0;
 	static int nodeCount = 0;
+    static int ErrorIndex = 0;
     static Quad* threeAddressQueue = NULL;
 	static Quad* optimisedThreeAddressQueue = NULL;
     static Quad* copyFreeThreeAddressQueue = NULL;
 	static Quad* tempQueue = NULL;
     static char* currentScope;
 	static char* tString = NULL, *lString = NULL;
-	
+    static Error* errors = NULL;
+
     static void init() 
     {
 		tString = (char*)calloc(10, sizeof(char));
@@ -68,6 +77,7 @@
 		threeAddressQueue = (Quad*)calloc(1000, sizeof(Quad));
         currentScope = (char*)malloc(30 * sizeof(char));
         strcpy(currentScope, "Global");
+        errors = (Error*)calloc(100, sizeof(Error));
     }
 
     static int searchSymbol(char* name) {
@@ -644,6 +654,25 @@
 		qIndex = qIndexOpt;
 	}
 
+    void createError(int type, char* msg, int lineNo)
+    {
+        errors[ErrorIndex].type = type;
+        errors[ErrorIndex].lineNo = lineNo;
+
+        errors[ErrorIndex].msg = (char*)malloc(sizeof(char) * strlen(msg));
+        strcpy(errors[ErrorIndex].msg, msg);
+
+        ErrorIndex++;
+    }
+
+    void displayErrors()
+    {
+        for(int i = 0; i < ErrorIndex; i++)
+        {
+            printf(RED "%s %d\n" RESET, errors[i].msg, errors[i].lineNo);
+        }
+    }
+
     void deallocateMemory()
     {
         free(currentScope);
@@ -726,8 +755,10 @@ startparse: {init();} start  ENDFILE   {
 									printf(GREEN "\n\nValid Python Syntax\n\n" RESET); 
                                  }
                                  else {
-									printf(RED "\nInvalid Python Syntax\n" RESET); 
+									// printf(RED "\nInvalid Python Syntax\n" RESET); 
 									displayAST($2);
+                                    printf("\n\n");
+                                    displayErrors();
 									printf("\n");
                                  }
 								 exit(0);
@@ -738,7 +769,14 @@ start: NEWLINE start {$$=$2;}
 
 constant: NUMBER {$$ = createOp($<text>1, 0, NULL, NULL, NULL); } 
         | STRING {$$ = createOp($<text>1, 0, NULL, NULL, NULL); };
-term: ID {$$ = createOp($<text>1, 0, NULL, NULL, NULL); }
+term: ID {  
+            if(searchSymbol($<text>1) < 0)
+            {   
+                createError(2, "NameError: Identifier is not declared in Line", yylineno);
+                isError = 1;
+            }
+            $$ = createOp($<text>1, 0, NULL, NULL, NULL); 
+        }
     | constant {$$ = $1;} ;
 expressions: arith_expr {$$=$1;}| bool_expr {$$=$1;};
 arith_expr: term {$$=$1;} 
@@ -837,7 +875,8 @@ end_suite: DEDENT {$$ = createOp("EndBlock", 0, NULL, NULL, NULL);}
 %%
 
 int  yyerror(const char* text) {
-	printf(RED "Syntax Error at Line %d\n   " RESET, yylineno);
+    createError(1, "Syntax Error: Unexpected token at Line ", yylineno);
+	// printf(RED "Syntax Error at Line %d\n   " RESET, yylineno);
 }
 
 int main() {
