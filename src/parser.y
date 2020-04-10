@@ -294,7 +294,6 @@
 					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");
 					labelIndex++;
 					generateThreeAddressCode(root->middle);
-					labelIndex--;
 					makeQ(makeStr(temp, 0), "-", "-", "Label");
 					break;
 				}
@@ -302,13 +301,13 @@
 				{
 					int temp = labelIndex;
 					generateThreeAddressCode(root->left);
-					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");					
+					makeQ(makeStr(temp, 0), makeStr(root->left->nodeNo, 1), "-", "If False");	
+                    labelIndex=labelIndex+2;				
 					generateThreeAddressCode(root->middle);
 					makeQ(makeStr(temp+1, 0), "-", "-", "goto");
 					makeQ(makeStr(temp, 0), "-", "-", "Label");
 					generateThreeAddressCode(root->right);
 					makeQ(makeStr(temp+1, 0), "-", "-", "Label");
-					labelIndex+=2;
 					break;
 				}
 			}
@@ -329,7 +328,6 @@
 			generateThreeAddressCode(root->middle);
 			makeWhileQ(makeStr(temp, 0), "-", "-", "goto", 1);
 			makeQ(makeStr(temp+1, 0), "-", "-", "Label"); 
-			labelIndex = labelIndex+2;
 			return;
 		}
         else if(!strcmp(root->nodeType, "Next"))
