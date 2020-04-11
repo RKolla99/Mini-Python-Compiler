@@ -575,14 +575,14 @@
                     !(strcmp(threeAddressQueue[i].operator,"If False") == 0) &&
                     !(strcmp(threeAddressQueue[i].operator,"Call") == 0) &&
                     !(strcmp(threeAddressQueue[i].Result,"-") == 0) &&
-					threeAddressQueue[i].Index != -2
+					threeAddressQueue[i].Index >= 0
                 )
                 {
                     int required = 0;
                     for(int j=i+1;j<qIndex;j++)
                     {
-                        if( ( (strcmp(threeAddressQueue[j].op1,threeAddressQueue[i].Result) == 0) && threeAddressQueue[i].Index != -1) ||
-                            ( (strcmp(threeAddressQueue[j].op2,threeAddressQueue[i].Result) == 0) && threeAddressQueue[i].Index != -1)  )
+                        if( ( (strcmp(threeAddressQueue[j].op1,threeAddressQueue[i].Result) == 0) && threeAddressQueue[j].Index != -1) ||
+                            ( (strcmp(threeAddressQueue[j].op2,threeAddressQueue[i].Result) == 0) && threeAddressQueue[j].Index != -1)  )
                             {
                                 required = 1;
                                 break;
@@ -591,7 +591,7 @@
 
                     if(!required && threeAddressQueue[i].Index != -1)
                     {
-						threeAddressQueue[i - 1].Index = -1;
+						// threeAddressQueue[i - 1].Index = -1;
                         threeAddressQueue[i].Index = -1;
                         deadCodeExists = 1;
                     }
@@ -702,7 +702,7 @@
 		}
 
         free(copyFreeThreeAddressQueue);
-        free(threeAddressQueue);
+        // free(threeAddressQueue);
     }
 
 %}
